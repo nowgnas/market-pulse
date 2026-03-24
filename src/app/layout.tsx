@@ -10,9 +10,61 @@ const notoSansKr = Noto_Sans_KR({
   preload: true,
 });
 
+const SITE_NAME = "마켓펄스 - Market Pulse";
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://market-pulse.vercel.app";
+const SITE_DESCRIPTION =
+  "매일 아침, 점심, 저녁 한국·미국 증시와 경제 뉴스를 AI가 분석하여 요약해드립니다. KOSPI, KOSDAQ, 나스닥, S&P500 실시간 브리핑.";
+
 export const metadata: Metadata = {
-  title: "오늘의 증시 브리핑",
-  description: "매일 아침, 점심, 저녁 증시와 경제 뉴스를 AI가 요약해드립니다",
+  metadataBase: new URL(SITE_URL),
+  title: {
+    default: SITE_NAME,
+    template: `%s | ${SITE_NAME}`,
+  },
+  description: SITE_DESCRIPTION,
+  keywords: [
+    "증시 브리핑", "주식 뉴스 요약", "AI 증시 분석",
+    "KOSPI", "KOSDAQ", "나스닥", "S&P500", "다우존스",
+    "한국 증시", "미국 증시", "경제 뉴스", "투자 정보",
+    "주식 시장 분석", "오늘의 증시", "market pulse",
+  ],
+  authors: [{ name: SITE_NAME }],
+  creator: SITE_NAME,
+  publisher: SITE_NAME,
+  formatDetection: { telephone: false },
+  openGraph: {
+    type: "website",
+    locale: "ko_KR",
+    url: SITE_URL,
+    siteName: SITE_NAME,
+    title: SITE_NAME,
+    description: SITE_DESCRIPTION,
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: SITE_NAME,
+    description: SITE_DESCRIPTION,
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-video-preview": -1,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+    },
+  },
+  alternates: {
+    canonical: SITE_URL,
+  },
+  verification: {
+    google: process.env.NEXT_PUBLIC_GOOGLE_VERIFICATION,
+    other: {
+      "naver-site-verification": process.env.NEXT_PUBLIC_NAVER_VERIFICATION || "",
+    },
+  },
 };
 
 function Header() {
@@ -51,6 +103,20 @@ function Footer() {
   );
 }
 
+const jsonLd = {
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  name: SITE_NAME,
+  url: SITE_URL,
+  description: SITE_DESCRIPTION,
+  inLanguage: "ko-KR",
+  publisher: {
+    "@type": "Organization",
+    name: SITE_NAME,
+    url: SITE_URL,
+  },
+};
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -61,6 +127,12 @@ export default function RootLayout({
       lang="ko"
       className={`${notoSansKr.variable} h-full antialiased`}
     >
+      <head>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
+      </head>
       <body className="min-h-full flex flex-col bg-background">
         <Header />
         <main className="flex-1">{children}</main>

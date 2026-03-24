@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase/client";
@@ -24,6 +25,49 @@ async function getPost(id: string): Promise<Post | null> {
   }
 
   return data;
+}
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}): Promise<Metadata> {
+  const { id } = await params;
+  const post = await getPost(id);
+
+  if (!post) {
+    return { title: "포스트를 찾을 수 없습니다" };
+  }
+
+  const typeLabel = POST_TYPE_LABELS[post.post_type]?.label || "";
+  const publishedDate = new Date(post.published_at);
+  const dateStr = format(publishedDate, "yyyy년 M월 d일", { locale: ko });
+  const description = post.summary || `${dateStr} ${typeLabel} 증시 브리핑`;
+
+  return {
+    title: post.title,
+    description,
+    keywords: [
+      "증시 브리핑", `${dateStr} 증시`, typeLabel,
+      "KOSPI", "나스닥", "주식 분석", "AI 증시 요약",
+    ],
+    openGraph: {
+      type: "article",
+      title: post.title,
+      description,
+      publishedTime: post.published_at,
+      section: "증시/경제",
+      tags: ["증시", "경제", "주식", typeLabel],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: post.title,
+      description,
+    },
+    alternates: {
+      canonical: `/posts/${id}`,
+    },
+  };
 }
 
 function parseBoldText(text: string): React.ReactNode[] {
@@ -183,8 +227,24 @@ export default async function PostPage({
   const typeInfo = POST_TYPE_LABELS[post.post_type];
   const publishedDate = new Date(post.published_at);
 
+  const articleJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "NewsArticle",
+    headline: post.title,
+    description: post.summary,
+    datePublished: post.published_at,
+    dateModified: post.updated_at || post.published_at,
+    author: { "@type": "Organization", name: "마켓펄스" },
+    publisher: { "@type": "Organization", name: "마켓펄스" },
+    mainEntityOfPage: { "@type": "WebPage", "@id": `/posts/${id}` },
+  };
+
   return (
     <div className="max-w-4xl mx-auto px-4 py-8">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(articleJsonLd) }}
+      />
       <Link
         href="/"
         className="inline-flex items-center text-sm text-secondary hover:text-primary mb-6"
