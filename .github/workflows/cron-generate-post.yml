@@ -1,0 +1,33 @@
+name: Generate Market Post
+
+on:
+  schedule:
+    # KST 08:00 = UTC 23:00 (전날)
+    - cron: '0 23 * * *'
+    # KST 12:00 = UTC 03:00
+    - cron: '0 3 * * *'
+    # KST 18:00 = UTC 09:00
+    - cron: '0 9 * * *'
+  workflow_dispatch:
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Call generate-post API
+        run: |
+          response=$(curl -s -w "\n%{http_code}" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            "${{ secrets.SITE_URL }}/api/cron/generate-post")
+
+          http_code=$(echo "$response" | tail -1)
+          body=$(echo "$response" | head -n -1)
+
+          echo "Status: $http_code"
+          echo "Response: $body"
+
+          if [ "$http_code" != "200" ]; then
+            echo "::error::API call failed with status $http_code"
+            exit 1
+          fi
