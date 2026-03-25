@@ -69,15 +69,15 @@ export const metadata: Metadata = {
 
 function Header() {
   return (
-    <header className="border-b border-border bg-card sticky top-0 z-50">
-      <div className="max-w-2xl mx-auto px-4 py-3">
+    <header className="border-b border-border bg-card/80 backdrop-blur-md sticky top-0 z-50">
+      <div className="max-w-3xl mx-auto px-4 py-3">
         <nav className="flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2">
-            <span className="text-xl">📊</span>
-            <span className="font-bold text-lg">마켓 브리핑</span>
+          <Link href="/" className="flex items-center gap-2.5">
+            <span className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center text-white text-sm font-bold">M</span>
+            <span className="font-bold text-lg tracking-tight">Market Pulse</span>
           </Link>
           <span className="text-xs text-secondary hidden sm:block">
-            바쁜 직장인을 위한 증시 요약
+            AI 증시 브리핑
           </span>
         </nav>
       </div>
@@ -87,10 +87,10 @@ function Header() {
 
 function Footer() {
   return (
-    <footer className="border-t border-border bg-card mt-auto">
-      <div className="max-w-2xl mx-auto px-4 py-4 text-center text-xs text-secondary">
-        <p>🕐 매일 08:00 · 12:00 · 18:00 자동 업데이트</p>
-        <p className="mt-1">데이터: 네이버 증권 · Yahoo Finance</p>
+    <footer className="border-t border-border mt-auto">
+      <div className="max-w-3xl mx-auto px-4 py-5 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-secondary">
+        <p>매일 08:00 · 12:00 · 18:00 자동 업데이트</p>
+        <p>네이버 증권 · Yahoo Finance · AI 분석</p>
       </div>
     </footer>
   );

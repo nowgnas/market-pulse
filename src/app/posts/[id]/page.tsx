@@ -118,51 +118,47 @@ function MarkdownContent({ content }: { content: string }) {
   return <div className="prose max-w-none">{elements}</div>;
 }
 
+function IndexCard({ idx }: { idx: { name: string; change?: number | null; changePercent?: number | null; value?: number | null } }) {
+  const change = idx.change ?? 0;
+  const pct = idx.changePercent ?? 0;
+  const value = idx.value ?? 0;
+  const isUp = change >= 0;
+
+  return (
+    <div className={`p-3 rounded-xl border ${isUp ? "border-accent/20 bg-accent-bg" : "border-danger/20 bg-danger-bg"}`}>
+      <div className="text-xs text-secondary mb-1">{idx.name}</div>
+      <div className="font-bold text-lg tabular-nums">{value.toLocaleString()}</div>
+      <div className={`text-xs font-semibold tabular-nums ${isUp ? "text-accent" : "text-danger"}`}>
+        {isUp ? "+" : ""}{change.toLocaleString()} ({isUp ? "+" : ""}{pct.toFixed(2)}%)
+      </div>
+    </div>
+  );
+}
+
 function MarketIndices({ indices }: { indices: Post["metadata"] }) {
   if (!indices?.indices || indices.indices.length === 0) return null;
 
   const kr = indices.indices.filter((i) => i.market === "KR");
   const us = indices.indices.filter((i) => i.market === "US");
 
-  const renderIndex = (idx: typeof indices.indices[0]) => {
-    const change = idx.change ?? 0;
-    const changePercent = idx.changePercent ?? 0;
-    const value = idx.value ?? 0;
-    const isUp = change >= 0;
-
-    return (
-      <div
-        key={idx.name}
-        className="flex items-center justify-between p-3 bg-background rounded-lg"
-      >
-        <span className="font-medium">{idx.name}</span>
-        <div className="text-right">
-          <div className="font-semibold">{value.toLocaleString()}</div>
-          <div className={`text-sm ${isUp ? "text-accent" : "text-danger"}`}>
-            {isUp ? "▲" : "▼"} {Math.abs(changePercent).toFixed(2)}%
+  return (
+    <div className="mb-6 space-y-4">
+      {kr.length > 0 && (
+        <div>
+          <div className="text-xs font-semibold text-secondary uppercase tracking-wider mb-2">KR 한국</div>
+          <div className="grid grid-cols-2 gap-2">
+            {kr.map((idx) => <IndexCard key={idx.name} idx={idx} />)}
           </div>
         </div>
-      </div>
-    );
-  };
-
-  return (
-    <div className="bg-card border border-border rounded-xl p-4 mb-6">
-      <h3 className="font-semibold mb-3">📊 시장 지수</h3>
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-        {kr.length > 0 && (
-          <>
-            <div className="col-span-full text-sm text-secondary mb-1">🇰🇷 한국</div>
-            {kr.map(renderIndex)}
-          </>
-        )}
-        {us.length > 0 && (
-          <>
-            <div className="col-span-full text-sm text-secondary mb-1 mt-2">🇺🇸 미국</div>
-            {us.map(renderIndex)}
-          </>
-        )}
-      </div>
+      )}
+      {us.length > 0 && (
+        <div>
+          <div className="text-xs font-semibold text-secondary uppercase tracking-wider mb-2">US 미국</div>
+          <div className="grid grid-cols-3 gap-2">
+            {us.map((idx) => <IndexCard key={idx.name} idx={idx} />)}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -171,23 +167,22 @@ function NewsList({ metadata }: { metadata: Post["metadata"] }) {
   if (!metadata?.news || metadata.news.length === 0) return null;
 
   return (
-    <div className="mt-8 bg-card border border-border rounded-xl p-4">
-      <h3 className="font-semibold mb-3">🔗 관련 뉴스 원문</h3>
-      <ul className="space-y-2">
+    <div className="mt-8 border-t border-border pt-6">
+      <h3 className="text-sm font-semibold text-secondary uppercase tracking-wider mb-3">관련 뉴스</h3>
+      <div className="space-y-2">
         {metadata.news.slice(0, 5).map((news, index) => (
-          <li key={index} className="text-sm">
-            <a
-              href={news.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-primary hover:underline"
-            >
-              {news.title}
-            </a>
-            <span className="text-secondary text-xs ml-2">({news.source})</span>
-          </li>
+          <a
+            key={index}
+            href={news.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center justify-between p-3 rounded-xl bg-muted hover:bg-primary/5 transition-colors group"
+          >
+            <span className="text-sm group-hover:text-primary transition-colors">{news.title}</span>
+            <span className="text-xs text-secondary shrink-0 ml-3">{news.source}</span>
+          </a>
         ))}
-      </ul>
+      </div>
     </div>
   );
 }
@@ -208,41 +203,41 @@ export default async function PostPage({
   const publishedDate = new Date(post.published_at);
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-8">
+    <div className="max-w-3xl mx-auto px-4 py-8">
       <Link
         href="/"
-        className="inline-flex items-center text-sm text-secondary hover:text-primary mb-6"
+        className="inline-flex items-center gap-1 text-sm text-secondary hover:text-primary transition-colors mb-6"
       >
-        ← 목록으로
+        <span>&#8592;</span> 목록으로
       </Link>
 
       <article>
-        <header className="mb-6">
+        <header className="mb-8">
           <div className="flex items-center gap-2 mb-3">
-            <span className="text-2xl">{typeInfo.emoji}</span>
-            <div>
-              <span className="font-medium">{typeInfo.label} 브리핑</span>
-              <span className="text-secondary text-sm ml-2">{typeInfo.desc}</span>
-            </div>
+            <span className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-base">{typeInfo.emoji}</span>
+            <span className="text-sm font-semibold">{typeInfo.label} 브리핑</span>
+            <span className="text-xs text-secondary">{typeInfo.desc}</span>
           </div>
+
+          <h1 className="text-2xl font-bold tracking-tight mb-2 leading-snug">{post.title}</h1>
 
           <time
             dateTime={post.published_at}
-            className="text-sm text-secondary block mb-3"
+            className="text-xs text-secondary tabular-nums"
           >
             {format(publishedDate, "yyyy년 M월 d일 (EEEE) HH:mm", { locale: ko })}
           </time>
 
-          <h1 className="text-2xl font-bold mb-4">{post.title}</h1>
-
-          <p className="text-secondary bg-card border border-border rounded-xl p-4">
-            {post.summary}
-          </p>
+          {post.summary && (
+            <p className="mt-4 text-sm text-secondary leading-relaxed bg-muted rounded-xl p-4">
+              {post.summary}
+            </p>
+          )}
         </header>
 
         <MarketIndices indices={post.metadata} />
 
-        <div className="border-t border-border pt-6">
+        <div className="pt-2">
           <MarkdownContent content={post.content} />
         </div>
 

@@ -68,12 +68,17 @@ export async function fetchKoreanMarketIndices(): Promise<IndexData[]> {
       const changeArea = kospiArea.closest("div").find(".change");
       const change = parseNumber(changeArea.text());
       const isUp = changeArea.hasClass("up") || changeArea.find(".ico_up").length > 0;
+      const signedChange = isUp ? Math.abs(change) : -Math.abs(change);
+      const prevValue = value - signedChange;
+      const changePercent = prevValue !== 0
+        ? Math.round((signedChange / prevValue) * 10000) / 100
+        : 0;
 
       indices.push({
         name: "KOSPI",
         value: value || 2500,
-        change: isUp ? Math.abs(change) : -Math.abs(change),
-        changePercent: 0,
+        change: signedChange,
+        changePercent,
         market: "KR",
       });
     }
@@ -85,12 +90,17 @@ export async function fetchKoreanMarketIndices(): Promise<IndexData[]> {
       const changeArea = kosdaqArea.closest("div").find(".change");
       const change = parseNumber(changeArea.text());
       const isUp = changeArea.hasClass("up") || changeArea.find(".ico_up").length > 0;
+      const signedChange = isUp ? Math.abs(change) : -Math.abs(change);
+      const prevValue = value - signedChange;
+      const changePercent = prevValue !== 0
+        ? Math.round((signedChange / prevValue) * 10000) / 100
+        : 0;
 
       indices.push({
         name: "KOSDAQ",
         value: value || 800,
-        change: isUp ? Math.abs(change) : -Math.abs(change),
-        changePercent: 0,
+        change: signedChange,
+        changePercent,
         market: "KR",
       });
     }

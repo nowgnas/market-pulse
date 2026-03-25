@@ -31,41 +31,28 @@ async function getPosts(type?: string): Promise<Post[]> {
   return data || [];
 }
 
+function IndexBadge({ idx }: { idx: { name: string; change?: number | null; changePercent?: number | null } }) {
+  const change = idx.change ?? 0;
+  const pct = idx.changePercent ?? 0;
+  const isUp = change >= 0;
+
+  return (
+    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium ${isUp ? "bg-accent-bg text-accent" : "bg-danger-bg text-danger"}`}>
+      {idx.name} {isUp ? "+" : ""}{pct.toFixed(2)}%
+    </span>
+  );
+}
+
 function MarketSummary({ indices }: { indices: Post["metadata"] }) {
   if (!indices?.indices || indices.indices.length === 0) return null;
 
   const kr = indices.indices.filter((i) => i.market === "KR");
   const us = indices.indices.filter((i) => i.market === "US");
 
-  const renderIndex = (idx: typeof indices.indices[0]) => {
-    const change = idx.change ?? 0;
-    const changePercent = idx.changePercent ?? 0;
-    const isUp = change >= 0;
-
-    return (
-      <div key={idx.name} className="flex items-center gap-1.5">
-        <span className="font-medium text-sm">{idx.name}</span>
-        <span className={`text-xs font-medium ${isUp ? "text-accent" : "text-danger"}`}>
-          {isUp ? "▲" : "▼"} {Math.abs(changePercent).toFixed(1)}%
-        </span>
-      </div>
-    );
-  };
-
   return (
-    <div className="flex flex-wrap gap-x-4 gap-y-1 mt-3 text-sm">
-      {kr.length > 0 && (
-        <div className="flex items-center gap-2">
-          <span className="text-xs">🇰🇷</span>
-          {kr.map(renderIndex)}
-        </div>
-      )}
-      {us.length > 0 && (
-        <div className="flex items-center gap-2">
-          <span className="text-xs">🇺🇸</span>
-          {us.map(renderIndex)}
-        </div>
-      )}
+    <div className="flex flex-wrap gap-1.5 mt-3">
+      {kr.map((idx) => <IndexBadge key={idx.name} idx={idx} />)}
+      {us.map((idx) => <IndexBadge key={idx.name} idx={idx} />)}
     </div>
   );
 }
@@ -76,28 +63,23 @@ function PostCard({ post }: { post: Post }) {
 
   return (
     <Link href={`/posts/${post.id}`}>
-      <article className="bg-card border border-border rounded-xl p-5 hover:shadow-md hover:border-primary/30 transition-all cursor-pointer">
-        <div className="flex items-center justify-between mb-3">
+      <article className="group bg-card border border-border rounded-2xl p-5 hover:border-primary/40 hover:shadow-lg hover:shadow-primary/5 transition-all cursor-pointer">
+        <div className="flex items-center justify-between mb-2.5">
           <div className="flex items-center gap-2">
-            <span className="text-xl">{typeInfo.emoji}</span>
-            <div>
-              <span className="font-medium text-sm">{typeInfo.label} 브리핑</span>
-              <span className="text-secondary text-xs ml-2">{typeInfo.desc}</span>
-            </div>
+            <span className="w-7 h-7 rounded-full bg-muted flex items-center justify-center text-sm">{typeInfo.emoji}</span>
+            <span className="font-semibold text-sm">{typeInfo.label}</span>
+            <span className="text-secondary text-xs">{typeInfo.desc}</span>
           </div>
-          <time
-            dateTime={post.published_at}
-            className="text-xs text-secondary"
-          >
+          <time dateTime={post.published_at} className="text-xs text-secondary tabular-nums">
             {format(publishedDate, "M/d (EEE) HH:mm", { locale: ko })}
           </time>
         </div>
 
-        <h2 className="text-lg font-semibold mb-2 text-foreground group-hover:text-primary transition-colors">
+        <h2 className="text-base font-bold mb-1.5 group-hover:text-primary transition-colors leading-snug">
           {post.title}
         </h2>
 
-        <p className="text-secondary text-sm line-clamp-2 mb-2">{post.summary}</p>
+        <p className="text-secondary text-sm line-clamp-2 leading-relaxed">{post.summary}</p>
 
         <MarketSummary indices={post.metadata} />
       </article>
@@ -107,41 +89,41 @@ function PostCard({ post }: { post: Post }) {
 
 function FilterTabs({ currentType }: { currentType?: string }) {
   const tabs = [
-    { key: "", label: "전체", emoji: "📊" },
-    { key: "morning", label: "아침", emoji: "🌅" },
-    { key: "noon", label: "점심", emoji: "☀️" },
-    { key: "evening", label: "저녁", emoji: "🌙" },
+    { key: "", label: "전체" },
+    { key: "morning", label: "🌅 아침" },
+    { key: "noon", label: "☀️ 점심" },
+    { key: "evening", label: "🌙 저녁" },
   ];
 
   return (
-    <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
-      {tabs.map((tab) => (
-        <Link
-          key={tab.key}
-          href={tab.key ? `/?type=${tab.key}` : "/"}
-          className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
-            currentType === tab.key || (!currentType && tab.key === "")
-              ? "bg-primary text-white"
-              : "bg-card border border-border hover:border-primary/50"
-          }`}
-        >
-          <span>{tab.emoji}</span>
-          <span>{tab.label}</span>
-        </Link>
-      ))}
+    <div className="flex gap-1.5 mb-6 overflow-x-auto pb-1">
+      {tabs.map((tab) => {
+        const isActive = currentType === tab.key || (!currentType && tab.key === "");
+        return (
+          <Link
+            key={tab.key}
+            href={tab.key ? `/?type=${tab.key}` : "/"}
+            className={`px-4 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-all ${
+              isActive
+                ? "bg-primary text-white shadow-sm shadow-primary/25"
+                : "text-secondary hover:text-foreground hover:bg-muted"
+            }`}
+          >
+            {tab.label}
+          </Link>
+        );
+      })}
     </div>
   );
 }
 
 function EmptyState() {
   return (
-    <div className="text-center py-16 bg-card border border-border rounded-xl">
-      <div className="text-5xl mb-4">📭</div>
-      <h2 className="text-lg font-semibold mb-2">아직 브리핑이 없습니다</h2>
+    <div className="text-center py-20">
+      <div className="w-16 h-16 bg-muted rounded-2xl flex items-center justify-center mx-auto mb-4 text-2xl">📭</div>
+      <h2 className="text-lg font-semibold mb-1">아직 브리핑이 없습니다</h2>
       <p className="text-secondary text-sm">
         첫 번째 마켓 브리핑이 곧 업로드됩니다.
-        <br />
-        매일 08:00, 12:00, 18:00에 자동 업데이트됩니다.
       </p>
     </div>
   );
@@ -156,18 +138,18 @@ export default async function HomePage({
   const posts = await getPosts(params.type);
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-8">
+    <div className="max-w-3xl mx-auto px-4 py-8">
       <section className="mb-6">
-        <h1 className="text-2xl font-bold mb-1">마켓 브리핑</h1>
-        <p className="text-secondary text-sm">
-          바쁜 직장인을 위한 한국/미국 증시 뉴스 요약
+        <h1 className="text-2xl font-bold tracking-tight">Market Pulse</h1>
+        <p className="text-secondary text-sm mt-0.5">
+          한국 · 미국 증시를 AI가 매일 분석합니다
         </p>
       </section>
 
       <FilterTabs currentType={params.type} />
 
       {posts.length > 0 ? (
-        <div className="space-y-4">
+        <div className="space-y-3">
           {posts.map((post) => (
             <PostCard key={post.id} post={post} />
           ))}
