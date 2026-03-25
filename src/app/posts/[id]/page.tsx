@@ -6,10 +6,10 @@ import { Post, PostType } from "@/types/database";
 import { format } from "date-fns";
 import { ko } from "date-fns/locale";
 
-const POST_TYPE_LABELS: Record<PostType, { label: string; emoji: string }> = {
-  morning: { label: "아침", emoji: "🌅" },
-  noon: { label: "점심", emoji: "☀️" },
-  evening: { label: "저녁", emoji: "🌙" },
+const POST_TYPE_LABELS: Record<PostType, { label: string; emoji: string; desc: string }> = {
+  morning: { label: "아침", emoji: "🌅", desc: "미국장 마감 + 한국장 전망" },
+  noon: { label: "점심", emoji: "☀️", desc: "오전장 동향 + 실시간 이슈" },
+  evening: { label: "저녁", emoji: "🌙", desc: "한국장 마감 + 미국장 프리뷰" },
 };
 
 async function getPost(id: string): Promise<Post | null> {
@@ -42,30 +42,16 @@ export async function generateMetadata({
   const typeLabel = POST_TYPE_LABELS[post.post_type]?.label || "";
   const publishedDate = new Date(post.published_at);
   const dateStr = format(publishedDate, "yyyy년 M월 d일", { locale: ko });
-  const description = post.summary || `${dateStr} ${typeLabel} 증시 브리핑`;
+  const description = post.summary || `${dateStr} ${typeLabel} 마켓 브리핑`;
 
   return {
     title: post.title,
     description,
-    keywords: [
-      "증시 브리핑", `${dateStr} 증시`, typeLabel,
-      "KOSPI", "나스닥", "주식 분석", "AI 증시 요약",
-    ],
     openGraph: {
       type: "article",
       title: post.title,
       description,
       publishedTime: post.published_at,
-      section: "증시/경제",
-      tags: ["증시", "경제", "주식", typeLabel],
-    },
-    twitter: {
-      card: "summary_large_image",
-      title: post.title,
-      description,
-    },
-    alternates: {
-      canonical: `/posts/${id}`,
     },
   };
 }
@@ -100,35 +86,29 @@ function MarkdownContent({ content }: { content: string }) {
   const elements: React.ReactNode[] = [];
 
   lines.forEach((line, index) => {
-    if (line.startsWith("# ")) {
+    if (line.startsWith("## ")) {
       elements.push(
-        <h1 key={index} className="text-2xl font-bold mb-4">
-          {parseBoldText(line.slice(2))}
-        </h1>
-      );
-    } else if (line.startsWith("## ")) {
-      elements.push(
-        <h2 key={index} className="text-xl font-semibold mt-6 mb-3">
+        <h2 key={index} className="text-xl font-bold mt-8 mb-4 flex items-center gap-2">
           {parseBoldText(line.slice(3))}
         </h2>
       );
     } else if (line.startsWith("### ")) {
       elements.push(
-        <h3 key={index} className="text-lg font-semibold mt-4 mb-2">
+        <h3 key={index} className="text-lg font-semibold mt-5 mb-2">
           {parseBoldText(line.slice(4))}
         </h3>
       );
     } else if (line.startsWith("- ")) {
       elements.push(
-        <li key={index} className="ml-4 mb-1">
+        <li key={index} className="ml-4 mb-2 list-disc">
           {parseBoldText(line.slice(2))}
         </li>
       );
     } else if (line.trim() === "") {
-      elements.push(<br key={index} />);
+      // Skip empty lines but allow spacing
     } else {
       elements.push(
-        <p key={index} className="mb-3 leading-relaxed">
+        <p key={index} className="mb-3 leading-relaxed text-foreground/90">
           {parseBoldText(line)}
         </p>
       );
@@ -138,51 +118,51 @@ function MarkdownContent({ content }: { content: string }) {
   return <div className="prose max-w-none">{elements}</div>;
 }
 
-function StocksList({ stocks }: { stocks: Post["metadata"] }) {
-  if (!stocks?.stocks || stocks.stocks.length === 0) return null;
+function MarketIndices({ indices }: { indices: Post["metadata"] }) {
+  if (!indices?.indices || indices.indices.length === 0) return null;
 
-  const krStocks = stocks.stocks.filter((s) => s.market === "KR");
-  const usStocks = stocks.stocks.filter((s) => s.market === "US");
+  const kr = indices.indices.filter((i) => i.market === "KR");
+  const us = indices.indices.filter((i) => i.market === "US");
 
-  const renderStockGroup = (title: string, items: typeof stocks.stocks, currency: string) => {
-    if (items.length === 0) return null;
+  const renderIndex = (idx: typeof indices.indices[0]) => {
+    const change = idx.change ?? 0;
+    const changePercent = idx.changePercent ?? 0;
+    const value = idx.value ?? 0;
+    const isUp = change >= 0;
+
     return (
-      <div className="mt-4">
-        <h4 className="text-sm font-medium text-secondary mb-2">{title}</h4>
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-          {items.slice(0, 6).map((stock) => (
-            <div
-              key={stock.code}
-              className="text-sm p-2 bg-background rounded"
-            >
-              <div className="font-medium truncate">{stock.name}</div>
-              <div className="flex justify-between text-xs mt-1">
-                <span>
-                  {currency === "원"
-                    ? `${(stock.price ?? 0).toLocaleString()}원`
-                    : `$${(stock.price ?? 0).toLocaleString("en-US")}`}
-                </span>
-                <span
-                  className={
-                    (stock.change ?? 0) >= 0 ? "text-accent" : "text-danger"
-                  }
-                >
-                  {(stock.change ?? 0) >= 0 ? "+" : ""}
-                  {(stock.changePercent ?? 0).toFixed(2)}%
-                </span>
-              </div>
-            </div>
-          ))}
+      <div
+        key={idx.name}
+        className="flex items-center justify-between p-3 bg-background rounded-lg"
+      >
+        <span className="font-medium">{idx.name}</span>
+        <div className="text-right">
+          <div className="font-semibold">{value.toLocaleString()}</div>
+          <div className={`text-sm ${isUp ? "text-accent" : "text-danger"}`}>
+            {isUp ? "▲" : "▼"} {Math.abs(changePercent).toFixed(2)}%
+          </div>
         </div>
       </div>
     );
   };
 
   return (
-    <div className="mt-8 p-4 bg-card border border-border rounded-lg">
-      <h3 className="font-semibold mb-1">주요 종목</h3>
-      {renderStockGroup("한국 🇰🇷", krStocks, "원")}
-      {renderStockGroup("미국 🇺🇸", usStocks, "$")}
+    <div className="bg-card border border-border rounded-xl p-4 mb-6">
+      <h3 className="font-semibold mb-3">📊 시장 지수</h3>
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+        {kr.length > 0 && (
+          <>
+            <div className="col-span-full text-sm text-secondary mb-1">🇰🇷 한국</div>
+            {kr.map(renderIndex)}
+          </>
+        )}
+        {us.length > 0 && (
+          <>
+            <div className="col-span-full text-sm text-secondary mb-1 mt-2">🇺🇸 미국</div>
+            {us.map(renderIndex)}
+          </>
+        )}
+      </div>
     </div>
   );
 }
@@ -191,8 +171,8 @@ function NewsList({ metadata }: { metadata: Post["metadata"] }) {
   if (!metadata?.news || metadata.news.length === 0) return null;
 
   return (
-    <div className="mt-6 p-4 bg-card border border-border rounded-lg">
-      <h3 className="font-semibold mb-3">관련 뉴스</h3>
+    <div className="mt-8 bg-card border border-border rounded-xl p-4">
+      <h3 className="font-semibold mb-3">🔗 관련 뉴스 원문</h3>
       <ul className="space-y-2">
         {metadata.news.slice(0, 5).map((news, index) => (
           <li key={index} className="text-sm">
@@ -204,7 +184,7 @@ function NewsList({ metadata }: { metadata: Post["metadata"] }) {
             >
               {news.title}
             </a>
-            <span className="text-secondary ml-2">({news.source})</span>
+            <span className="text-secondary text-xs ml-2">({news.source})</span>
           </li>
         ))}
       </ul>
@@ -227,24 +207,8 @@ export default async function PostPage({
   const typeInfo = POST_TYPE_LABELS[post.post_type];
   const publishedDate = new Date(post.published_at);
 
-  const articleJsonLd = {
-    "@context": "https://schema.org",
-    "@type": "NewsArticle",
-    headline: post.title,
-    description: post.summary,
-    datePublished: post.published_at,
-    dateModified: post.updated_at || post.published_at,
-    author: { "@type": "Organization", name: "마켓펄스" },
-    publisher: { "@type": "Organization", name: "마켓펄스" },
-    mainEntityOfPage: { "@type": "WebPage", "@id": `/posts/${id}` },
-  };
-
   return (
-    <div className="max-w-4xl mx-auto px-4 py-8">
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(articleJsonLd) }}
-      />
+    <div className="max-w-2xl mx-auto px-4 py-8">
       <Link
         href="/"
         className="inline-flex items-center text-sm text-secondary hover:text-primary mb-6"
@@ -253,59 +217,35 @@ export default async function PostPage({
       </Link>
 
       <article>
-        <header className="mb-8">
-          <div className="flex items-center gap-2 text-sm text-secondary mb-3">
-            <span>{typeInfo.emoji}</span>
-            <span>{typeInfo.label} 브리핑</span>
-            <span className="text-border">•</span>
-            <time dateTime={post.published_at}>
-              {format(publishedDate, "yyyy년 M월 d일 (EEEE) HH:mm", {
-                locale: ko,
-              })}
-            </time>
+        <header className="mb-6">
+          <div className="flex items-center gap-2 mb-3">
+            <span className="text-2xl">{typeInfo.emoji}</span>
+            <div>
+              <span className="font-medium">{typeInfo.label} 브리핑</span>
+              <span className="text-secondary text-sm ml-2">{typeInfo.desc}</span>
+            </div>
           </div>
 
-          <h1 className="text-2xl sm:text-3xl font-bold mb-4">{post.title}</h1>
+          <time
+            dateTime={post.published_at}
+            className="text-sm text-secondary block mb-3"
+          >
+            {format(publishedDate, "yyyy년 M월 d일 (EEEE) HH:mm", { locale: ko })}
+          </time>
 
-          <p className="text-lg text-secondary bg-card border border-border rounded-lg p-4">
+          <h1 className="text-2xl font-bold mb-4">{post.title}</h1>
+
+          <p className="text-secondary bg-card border border-border rounded-xl p-4">
             {post.summary}
           </p>
-
-          {post.metadata?.indices && post.metadata.indices.length > 0 && (
-            <div className="mt-4 flex flex-wrap gap-4">
-              {post.metadata.indices.map((index) => {
-                const change = index.change ?? 0;
-                const changePercent = index.changePercent ?? 0;
-                const value = index.value ?? 0;
-                return (
-                  <div
-                    key={index.name}
-                    className="flex items-center gap-2 bg-card border border-border rounded-lg px-4 py-2"
-                  >
-                    <span className="font-semibold">{index.name}</span>
-                    <span className="text-lg">
-                      {value.toLocaleString()}
-                    </span>
-                    <span
-                      className={`text-sm ${
-                        change >= 0 ? "text-accent" : "text-danger"
-                      }`}
-                    >
-                      {change >= 0 ? "▲" : "▼"}{" "}
-                      {Math.abs(changePercent).toFixed(2)}%
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
-          )}
         </header>
 
-        <div className="border-t border-border pt-8">
+        <MarketIndices indices={post.metadata} />
+
+        <div className="border-t border-border pt-6">
           <MarkdownContent content={post.content} />
         </div>
 
-        <StocksList stocks={post.metadata} />
         <NewsList metadata={post.metadata} />
       </article>
     </div>

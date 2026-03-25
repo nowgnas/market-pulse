@@ -10,10 +10,10 @@ const notoSansKr = Noto_Sans_KR({
   preload: true,
 });
 
-const SITE_NAME = "마켓펄스 - Market Pulse";
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://market-pulse.vercel.app";
+const SITE_NAME = "마켓 브리핑";
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://market-briefing.vercel.app";
 const SITE_DESCRIPTION =
-  "매일 아침, 점심, 저녁 한국·미국 증시와 경제 뉴스를 AI가 분석하여 요약해드립니다. KOSPI, KOSDAQ, 나스닥, S&P500 실시간 브리핑.";
+  "바쁜 직장인을 위한 한국/미국 증시 뉴스 요약. 매일 아침, 점심, 저녁 3-5분이면 오늘의 시장을 파악하세요.";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -70,22 +70,15 @@ export const metadata: Metadata = {
 function Header() {
   return (
     <header className="border-b border-border bg-card sticky top-0 z-50">
-      <div className="max-w-4xl mx-auto px-4 py-4">
+      <div className="max-w-2xl mx-auto px-4 py-3">
         <nav className="flex items-center justify-between">
-          <Link href="/" className="text-xl font-bold text-primary">
-            오늘의 증시
+          <Link href="/" className="flex items-center gap-2">
+            <span className="text-xl">📊</span>
+            <span className="font-bold text-lg">마켓 브리핑</span>
           </Link>
-          <div className="flex gap-4 text-sm text-secondary">
-            <Link href="/?type=morning" className="hover:text-primary transition-colors">
-              아침
-            </Link>
-            <Link href="/?type=noon" className="hover:text-primary transition-colors">
-              점심
-            </Link>
-            <Link href="/?type=evening" className="hover:text-primary transition-colors">
-              저녁
-            </Link>
-          </div>
+          <span className="text-xs text-secondary hidden sm:block">
+            바쁜 직장인을 위한 증시 요약
+          </span>
         </nav>
       </div>
     </header>
@@ -95,9 +88,9 @@ function Header() {
 function Footer() {
   return (
     <footer className="border-t border-border bg-card mt-auto">
-      <div className="max-w-4xl mx-auto px-4 py-6 text-center text-sm text-secondary">
-        <p>매일 08:00, 12:00, 18:00 자동 업데이트</p>
-        <p className="mt-1">데이터 출처: 네이버 뉴스, 네이버 증권</p>
+      <div className="max-w-2xl mx-auto px-4 py-4 text-center text-xs text-secondary">
+        <p>🕐 매일 08:00 · 12:00 · 18:00 자동 업데이트</p>
+        <p className="mt-1">데이터: 네이버 증권 · Yahoo Finance</p>
       </div>
     </footer>
   );

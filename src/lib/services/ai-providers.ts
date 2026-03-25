@@ -36,7 +36,7 @@ const geminiProvider: AIProvider = {
   summarize: async (prompt: string) => {
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
     const model = genAI.getGenerativeModel({
-      model: "gemini-2.0-flash",
+      model: "gemini-2.5-flash",
       generationConfig: { maxOutputTokens: 4096 },
     });
 
@@ -76,8 +76,8 @@ const claudeProvider: AIProvider = {
 };
 
 export const aiProviders: AIProvider[] = [
-  openaiProvider,
   geminiProvider,
+  openaiProvider,
   claudeProvider,
 ];
 
