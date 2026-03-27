@@ -1,11 +1,13 @@
 import { NewsData, StockData, IndexData, PostType } from "@/types/database";
 import { aiProviders, getAvailableProviders } from "./ai-providers";
+import { MarketHolidayStatus } from "./holidays";
 
 interface SummarizeInput {
   news: NewsData[];
   stocks: StockData[];
   indices: IndexData[];
   postType: PostType;
+  marketStatus?: MarketHolidayStatus;
 }
 
 interface SummarizeOutput {
@@ -74,8 +76,28 @@ function formatNewsForPrompt(news: NewsData[]): string {
     .join("\n");
 }
 
+function formatMarketStatusForPrompt(status?: MarketHolidayStatus): string {
+  if (!status) return "";
+
+  const lines: string[] = [];
+
+  if (status.kr.isHoliday) {
+    lines.push(`🇰🇷 한국: 휴장${status.kr.holidayName ? ` (${status.kr.holidayName})` : ""}`);
+  } else {
+    lines.push("🇰🇷 한국: 정상 개장");
+  }
+
+  if (status.us.isHoliday) {
+    lines.push(`🇺🇸 미국: 휴장${status.us.holidayName ? ` (${status.us.holidayName})` : ""}`);
+  } else {
+    lines.push("🇺🇸 미국: 정상 개장");
+  }
+
+  return lines.join("\n");
+}
+
 function buildPrompt(input: SummarizeInput): string {
-  const { news, indices, postType } = input;
+  const { news, indices, postType, marketStatus } = input;
   const config = POST_TYPE_CONFIG[postType];
 
   const today = new Date().toLocaleDateString("ko-KR", {
@@ -87,9 +109,13 @@ function buildPrompt(input: SummarizeInput): string {
 
   const marketData = formatMarketData(indices);
   const newsData = formatNewsForPrompt(news);
+  const marketStatusText = formatMarketStatusForPrompt(marketStatus);
 
   return `바쁜 직장인을 위한 ${today} ${config.label} 마켓 브리핑을 작성해주세요.
 이번 브리핑 초점: ${config.focus}
+
+=== 시장 개장 상태 ===
+${marketStatusText || "정보 없음"}
 
 === 시장 데이터 ===
 ${marketData || "데이터 없음"}
@@ -102,6 +128,7 @@ ${newsData || "뉴스 없음"}
 - 톤: 친근하고 이해하기 쉽게, 전문용어 최소화
 - 한국/미국 시장 균형있게 다루기
 - 뉴스와 시장 움직임을 연결해서 설명
+- 휴장인 시장이 있으면 본문 시작 부분에서 휴장 사실과 이유를 언급해주세요
 
 === 출력 형식 (JSON) ===
 {"title": "제목", "summary": "요약", "content": "본문"}
@@ -127,7 +154,7 @@ ${newsData || "뉴스 없음"}
 }
 
 function buildWeekendPrompt(input: SummarizeInput): string {
-  const { news, indices, postType } = input;
+  const { news, indices, postType, marketStatus } = input;
   const config = POST_TYPE_CONFIG[postType];
   const isWeeklyReview = postType === "weekly_review";
 
@@ -140,9 +167,13 @@ function buildWeekendPrompt(input: SummarizeInput): string {
 
   const marketData = formatMarketData(indices);
   const newsData = formatNewsForPrompt(news);
+  const marketStatusText = formatMarketStatusForPrompt(marketStatus);
 
   if (isWeeklyReview) {
     return `${today} 주간 시장 리뷰를 작성해주세요.
+
+=== 시장 개장 상태 ===
+${marketStatusText || "정보 없음"}
 
 === 최근 시장 데이터 ===
 ${marketData || "데이터 없음"}
@@ -185,6 +216,9 @@ ${newsData || "뉴스 없음"}
   } else {
     // week_ahead
     return `${today} 다음 주 시장 전망을 작성해주세요.
+
+=== 시장 개장 상태 ===
+${marketStatusText || "정보 없음"}
 
 === 현재 시장 상황 ===
 ${marketData || "데이터 없음"}

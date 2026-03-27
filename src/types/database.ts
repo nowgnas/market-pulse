@@ -14,10 +14,19 @@ export interface Post {
   metadata: PostMetadata | null;
 }
 
+export interface MarketStatus {
+  isHoliday: boolean;
+  holidayName?: string;
+}
+
 export interface PostMetadata {
   stocks?: StockData[];
   news?: NewsData[];
   indices?: IndexData[];
+  marketStatus?: {
+    kr: MarketStatus;
+    us: MarketStatus;
+  };
 }
 
 export type MarketRegion = "KR" | "US";

@@ -51,6 +51,27 @@ function IndexBadge({ idx }: { idx: { name: string; change?: number | null; chan
   );
 }
 
+function HolidayBadges({ metadata }: { metadata: Post["metadata"] }) {
+  if (!metadata?.marketStatus) return null;
+
+  const { kr, us } = metadata.marketStatus;
+
+  return (
+    <div className="flex gap-1.5">
+      {kr?.isHoliday && (
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-700">
+          🇰🇷 휴장{kr.holidayName && kr.holidayName !== "주말" && ` (${kr.holidayName})`}
+        </span>
+      )}
+      {us?.isHoliday && (
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-700">
+          🇺🇸 휴장{us.holidayName && us.holidayName !== "주말" && ` (${us.holidayName})`}
+        </span>
+      )}
+    </div>
+  );
+}
+
 function MarketSummary({ indices }: { indices: Post["metadata"] }) {
   if (!indices?.indices || indices.indices.length === 0) return null;
 
@@ -94,6 +115,9 @@ function PostCard({ post }: { post: Post }) {
 
         <p className="text-secondary text-sm line-clamp-2 leading-relaxed">{post.summary}</p>
 
+        <div className="flex flex-wrap gap-1.5 mt-3">
+          <HolidayBadges metadata={post.metadata} />
+        </div>
         <MarketSummary indices={post.metadata} />
       </article>
     </Link>

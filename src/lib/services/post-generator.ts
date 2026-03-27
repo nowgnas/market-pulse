@@ -2,6 +2,7 @@ import { fetchAllNews } from "@/lib/crawlers/naver-news";
 import { fetchKoreanMarketData } from "@/lib/crawlers/naver-stock";
 import { fetchUSMarketData } from "@/lib/crawlers/us-stock";
 import { summarizeMarketData, summarizeWeekendContent } from "@/lib/services/openai";
+import { getMarketHolidayStatus, MarketHolidayStatus } from "@/lib/services/holidays";
 import { supabaseAdmin } from "@/lib/supabase/server";
 import { PostType, PostCategory, PostMetadata, PostInsert } from "@/types/database";
 
@@ -74,6 +75,10 @@ export async function generateAndSavePost(): Promise<{
       return { success: true, skipped: true };
     }
 
+    // 공휴일 상태 확인
+    const marketStatus = getMarketHolidayStatus();
+    console.log("Market holiday status:", JSON.stringify(marketStatus));
+
     const [news, krMarket, usMarket] = await Promise.all([
       fetchAllNews(),
       fetchKoreanMarketData(),
@@ -97,6 +102,7 @@ export async function generateAndSavePost(): Promise<{
         stocks: allStocks,
         indices: allIndices,
         postType,
+        marketStatus,
       });
       title = result.title;
       content = result.content;
@@ -108,6 +114,7 @@ export async function generateAndSavePost(): Promise<{
         stocks: allStocks,
         indices: allIndices,
         postType,
+        marketStatus,
       });
       title = result.title;
       content = result.content;
@@ -118,6 +125,10 @@ export async function generateAndSavePost(): Promise<{
       news: news.slice(0, 10).map(({ body: _, ...rest }) => rest),
       stocks: allStocks.slice(0, 15),
       indices: allIndices,
+      marketStatus: {
+        kr: marketStatus.kr,
+        us: marketStatus.us,
+      },
     };
 
     const category: PostCategory = "mixed";

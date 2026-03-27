@@ -143,6 +143,29 @@ function IndexCard({ idx }: { idx: { name: string; change?: number | null; chang
   );
 }
 
+function MarketStatusBadge({ metadata }: { metadata: Post["metadata"] }) {
+  if (!metadata?.marketStatus) return null;
+
+  const { kr, us } = metadata.marketStatus;
+  const hasHoliday = kr?.isHoliday || us?.isHoliday;
+
+  if (!hasHoliday) return null;
+
+  return (
+    <div className="mb-4 p-3 rounded-xl bg-amber-50 border border-amber-200 text-sm">
+      <div className="font-semibold text-amber-800 mb-1">시장 개장 현황</div>
+      <div className="space-y-1 text-amber-700">
+        {kr?.isHoliday && (
+          <div>🇰🇷 한국: <span className="font-medium">휴장</span>{kr.holidayName && ` (${kr.holidayName})`}</div>
+        )}
+        {us?.isHoliday && (
+          <div>🇺🇸 미국: <span className="font-medium">휴장</span>{us.holidayName && ` (${us.holidayName})`}</div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function MarketIndices({ indices }: { indices: Post["metadata"] }) {
   if (!indices?.indices || indices.indices.length === 0) return null;
 
@@ -248,6 +271,7 @@ export default async function PostPage({
           )}
         </header>
 
+        <MarketStatusBadge metadata={post.metadata} />
         <MarketIndices indices={post.metadata} />
 
         <div className="pt-2">
