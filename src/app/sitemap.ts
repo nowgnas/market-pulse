@@ -1,7 +1,7 @@
 import type { MetadataRoute } from "next";
 import { supabase } from "@/lib/supabase/client";
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://market-pulse.vercel.app";
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://market-pulse-kr.vercel.app";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const { data } = await supabase
@@ -25,6 +25,18 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       lastModified: new Date(),
       changeFrequency: "hourly",
       priority: 1,
+    },
+    {
+      url: `${SITE_URL}/about`,
+      lastModified: new Date("2026-03-24"),
+      changeFrequency: "monthly",
+      priority: 0.5,
+    },
+    {
+      url: `${SITE_URL}/privacy`,
+      lastModified: new Date("2026-03-24"),
+      changeFrequency: "monthly",
+      priority: 0.3,
     },
     ...postEntries,
   ];

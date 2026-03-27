@@ -13,7 +13,7 @@ const notoSansKr = Noto_Sans_KR({
 });
 
 const SITE_NAME = "마켓 브리핑";
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://market-briefing.vercel.app";
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://market-pulse-kr.vercel.app";
 const SITE_DESCRIPTION =
   "바쁜 직장인을 위한 한국/미국 증시 뉴스 요약. 매일 아침, 점심, 저녁 3-5분이면 오늘의 시장을 파악하세요.";
 
@@ -90,9 +90,17 @@ function Header() {
 function Footer() {
   return (
     <footer className="border-t border-border mt-auto">
-      <div className="max-w-3xl mx-auto px-4 py-5 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-secondary">
-        <p>매일 08:00 · 12:00 · 18:00 자동 업데이트</p>
-        <p>네이버 증권 · Yahoo Finance · AI 분석</p>
+      <div className="max-w-3xl mx-auto px-4 py-5 text-xs text-secondary">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
+          <p>매일 08:00 · 12:00 · 18:00 자동 업데이트</p>
+          <nav className="flex items-center gap-4">
+            <Link href="/about" className="hover:text-foreground transition-colors">소개</Link>
+            <Link href="/privacy" className="hover:text-foreground transition-colors">개인정보처리방침</Link>
+          </nav>
+        </div>
+        <p className="text-center mt-3 text-secondary/70">
+          데이터: 네이버 증권 · Yahoo Finance · AI 분석 · 투자 판단의 책임은 본인에게 있습니다
+        </p>
       </div>
     </footer>
   );

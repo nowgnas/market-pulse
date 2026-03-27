@@ -8,6 +8,8 @@ import { ko } from "date-fns/locale";
 import { toZonedTime } from "date-fns-tz";
 
 const KOREA_TIMEZONE = "Asia/Seoul";
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://market-pulse-kr.vercel.app";
+const SITE_NAME = "마켓 브리핑";
 
 const POST_TYPE_LABELS: Record<PostType, { label: string; emoji: string; desc: string }> = {
   morning: { label: "아침", emoji: "🌅", desc: "미국장 마감 + 한국장 전망" },
@@ -49,14 +51,32 @@ export async function generateMetadata({
   const dateStr = format(publishedDate, "yyyy년 M월 d일", { locale: ko });
   const description = post.summary || `${dateStr} ${typeLabel} 마켓 브리핑`;
 
+  const postUrl = `${SITE_URL}/posts/${id}`;
+
   return {
     title: post.title,
     description,
+    keywords: [
+      `${dateStr} 증시`, typeLabel, "마켓 브리핑", "증시 분석",
+      "KOSPI", "나스닥", "주식 뉴스", "AI 증시 분석",
+    ],
+    alternates: { canonical: postUrl },
     openGraph: {
       type: "article",
       title: post.title,
       description,
+      url: postUrl,
+      siteName: SITE_NAME,
+      locale: "ko_KR",
       publishedTime: post.published_at,
+      modifiedTime: post.updated_at || post.published_at,
+      authors: [SITE_NAME],
+      section: "증시",
+    },
+    twitter: {
+      card: "summary",
+      title: post.title,
+      description,
     },
   };
 }
@@ -238,8 +258,26 @@ export default async function PostPage({
   // UTC를 한국 시간대로 변환
   const publishedDate = toZonedTime(new Date(post.published_at), KOREA_TIMEZONE);
 
+  const articleJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "NewsArticle",
+    headline: post.title,
+    description: post.summary,
+    datePublished: post.published_at,
+    dateModified: post.updated_at || post.published_at,
+    author: { "@type": "Organization", name: SITE_NAME, url: SITE_URL },
+    publisher: { "@type": "Organization", name: SITE_NAME, url: SITE_URL },
+    mainEntityOfPage: { "@type": "WebPage", "@id": `${SITE_URL}/posts/${id}` },
+    inLanguage: "ko-KR",
+    isAccessibleForFree: true,
+  };
+
   return (
     <div className="max-w-3xl mx-auto px-4 py-8">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(articleJsonLd) }}
+      />
       <Link
         href="/"
         className="inline-flex items-center gap-1 text-sm text-secondary hover:text-primary transition-colors mb-6"
