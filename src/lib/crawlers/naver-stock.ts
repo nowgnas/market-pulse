@@ -4,6 +4,28 @@ import * as iconv from "iconv-lite";
 import { StockData, IndexData } from "@/types/database";
 
 const NAVER_STOCK_URL = "https://finance.naver.com";
+const NAVER_MOBILE_API = "https://m.stock.naver.com/api";
+
+interface NaverIndexResponse {
+  closePrice: string;
+  compareToPreviousClosePrice: string;
+  fluctuationsRatio: string;
+}
+
+async function fetchNaverIndexAPI(indexCode: string): Promise<NaverIndexResponse | null> {
+  try {
+    const response = await axios.get(`${NAVER_MOBILE_API}/index/${indexCode}/basic`, {
+      headers: {
+        "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15",
+      },
+      timeout: 10000,
+    });
+    return response.data;
+  } catch (error) {
+    console.error(`Failed to fetch ${indexCode} from API:`, error);
+    return null;
+  }
+}
 
 function detectEncoding(url: string, contentType: string, rawBytes: Buffer): string {
   const ct = contentType.toLowerCase();
@@ -56,71 +78,106 @@ function parseNumber(text: string): number {
 }
 
 export async function fetchKoreanMarketIndices(): Promise<IndexData[]> {
-  try {
-    const html = await fetchWithEncoding(`${NAVER_STOCK_URL}/sise/`);
-    const $ = cheerio.load(html);
-    const indices: IndexData[] = [];
+  const indices: IndexData[] = [];
 
-    // KOSPI
-    const kospiArea = $("#KOSPI_now");
-    if (kospiArea.length) {
-      const value = parseNumber(kospiArea.text());
-      const changeArea = kospiArea.closest("div").find(".change");
-      const change = parseNumber(changeArea.text());
-      const isUp = changeArea.hasClass("up") || changeArea.find(".ico_up").length > 0;
-      const signedChange = isUp ? Math.abs(change) : -Math.abs(change);
-      const prevValue = value - signedChange;
-      const changePercent = prevValue !== 0
-        ? Math.round((signedChange / prevValue) * 10000) / 100
-        : 0;
+  // 네이버 모바일 API 사용 (더 안정적)
+  const indexCodes = [
+    { code: "KOSPI", name: "KOSPI" },
+    { code: "KOSDAQ", name: "KOSDAQ" },
+  ];
 
-      indices.push({
-        name: "KOSPI",
-        value: value || 2500,
-        change: signedChange,
-        changePercent,
-        market: "KR",
-      });
+  const results = await Promise.allSettled(
+    indexCodes.map((idx) => fetchNaverIndexAPI(idx.code))
+  );
+
+  results.forEach((result, i) => {
+    if (result.status === "fulfilled" && result.value) {
+      const data = result.value;
+      const value = parseNumber(data.closePrice);
+      const change = parseNumber(data.compareToPreviousClosePrice);
+      const changePercent = parseNumber(data.fluctuationsRatio);
+
+      if (value > 0) {
+        indices.push({
+          name: indexCodes[i].name,
+          value,
+          change,
+          changePercent,
+          market: "KR",
+        });
+      }
     }
+  });
 
-    // KOSDAQ
-    const kosdaqArea = $("#KOSDAQ_now");
-    if (kosdaqArea.length) {
-      const value = parseNumber(kosdaqArea.text());
-      const changeArea = kosdaqArea.closest("div").find(".change");
-      const change = parseNumber(changeArea.text());
-      const isUp = changeArea.hasClass("up") || changeArea.find(".ico_up").length > 0;
-      const signedChange = isUp ? Math.abs(change) : -Math.abs(change);
-      const prevValue = value - signedChange;
-      const changePercent = prevValue !== 0
-        ? Math.round((signedChange / prevValue) * 10000) / 100
-        : 0;
+  // API 실패 시 웹 스크래핑 폴백
+  if (indices.length === 0) {
+    console.log("API failed, trying web scraping fallback...");
+    try {
+      const html = await fetchWithEncoding(`${NAVER_STOCK_URL}/sise/`);
+      const $ = cheerio.load(html);
 
-      indices.push({
-        name: "KOSDAQ",
-        value: value || 800,
-        change: signedChange,
-        changePercent,
-        market: "KR",
-      });
+      // KOSPI - 다양한 셀렉터 시도
+      const kospiSelectors = ["#KOSPI_now", ".kospi_now", "[data-cd='KOSPI']"];
+      for (const selector of kospiSelectors) {
+        const kospiArea = $(selector);
+        if (kospiArea.length) {
+          const value = parseNumber(kospiArea.text());
+          if (value > 0) {
+            const changeArea = kospiArea.closest("div").find(".change, .rate_change");
+            const change = parseNumber(changeArea.text());
+            const percentArea = kospiArea.closest("div").find(".rate, .per");
+            const changePercent = parseNumber(percentArea.text()) ||
+              (value > 0 ? Math.round((change / (value - change)) * 10000) / 100 : 0);
+
+            indices.push({
+              name: "KOSPI",
+              value,
+              change,
+              changePercent,
+              market: "KR",
+            });
+            break;
+          }
+        }
+      }
+
+      // KOSDAQ - 다양한 셀렉터 시도
+      const kosdaqSelectors = ["#KOSDAQ_now", ".kosdaq_now", "[data-cd='KOSDAQ']"];
+      for (const selector of kosdaqSelectors) {
+        const kosdaqArea = $(selector);
+        if (kosdaqArea.length) {
+          const value = parseNumber(kosdaqArea.text());
+          if (value > 0) {
+            const changeArea = kosdaqArea.closest("div").find(".change, .rate_change");
+            const change = parseNumber(changeArea.text());
+            const percentArea = kosdaqArea.closest("div").find(".rate, .per");
+            const changePercent = parseNumber(percentArea.text()) ||
+              (value > 0 ? Math.round((change / (value - change)) * 10000) / 100 : 0);
+
+            indices.push({
+              name: "KOSDAQ",
+              value,
+              change,
+              changePercent,
+              market: "KR",
+            });
+            break;
+          }
+        }
+      }
+    } catch (error) {
+      console.error("Web scraping fallback also failed:", error);
     }
-
-    // 기본값 보장
-    if (indices.length === 0) {
-      indices.push(
-        { name: "KOSPI", value: 2500, change: 0, changePercent: 0, market: "KR" },
-        { name: "KOSDAQ", value: 800, change: 0, changePercent: 0, market: "KR" }
-      );
-    }
-
-    return indices;
-  } catch (error) {
-    console.error("Error fetching Korean market indices:", error);
-    return [
-      { name: "KOSPI", value: 0, change: 0, changePercent: 0, market: "KR" },
-      { name: "KOSDAQ", value: 0, change: 0, changePercent: 0, market: "KR" },
-    ];
   }
+
+  // 최종 폴백 - 데이터 없음 표시용
+  if (indices.length === 0) {
+    console.warn("All methods failed to fetch Korean market indices");
+    // 0 값 대신 빈 배열 반환 (UI에서 처리)
+    return [];
+  }
+
+  return indices;
 }
 
 export async function fetchKoreanTopStocks(): Promise<StockData[]> {

@@ -5,6 +5,9 @@ import { supabase } from "@/lib/supabase/client";
 import { Post, PostType } from "@/types/database";
 import { format } from "date-fns";
 import { ko } from "date-fns/locale";
+import { toZonedTime } from "date-fns-tz";
+
+const KOREA_TIMEZONE = "Asia/Seoul";
 
 const POST_TYPE_LABELS: Record<PostType, { label: string; emoji: string; desc: string }> = {
   morning: { label: "아침", emoji: "🌅", desc: "미국장 마감 + 한국장 전망" },
@@ -40,7 +43,7 @@ export async function generateMetadata({
   }
 
   const typeLabel = POST_TYPE_LABELS[post.post_type]?.label || "";
-  const publishedDate = new Date(post.published_at);
+  const publishedDate = toZonedTime(new Date(post.published_at), KOREA_TIMEZONE);
   const dateStr = format(publishedDate, "yyyy년 M월 d일", { locale: ko });
   const description = post.summary || `${dateStr} ${typeLabel} 마켓 브리핑`;
 
@@ -124,6 +127,9 @@ function IndexCard({ idx }: { idx: { name: string; change?: number | null; chang
   const value = idx.value ?? 0;
   const isUp = change >= 0;
 
+  // 퍼센트가 0이면 표시하지 않음
+  if (pct === 0) return null;
+
   return (
     <div className={`p-3 rounded-xl border ${isUp ? "border-accent/20 bg-accent-bg" : "border-danger/20 bg-danger-bg"}`}>
       <div className="text-xs text-secondary mb-1">{idx.name}</div>
@@ -138,8 +144,12 @@ function IndexCard({ idx }: { idx: { name: string; change?: number | null; chang
 function MarketIndices({ indices }: { indices: Post["metadata"] }) {
   if (!indices?.indices || indices.indices.length === 0) return null;
 
-  const kr = indices.indices.filter((i) => i.market === "KR");
-  const us = indices.indices.filter((i) => i.market === "US");
+  // 퍼센트가 0이 아닌 데이터만 필터링
+  const validIndices = indices.indices.filter((i) => (i.changePercent ?? 0) !== 0);
+  if (validIndices.length === 0) return null;
+
+  const kr = validIndices.filter((i) => i.market === "KR");
+  const us = validIndices.filter((i) => i.market === "US");
 
   return (
     <div className="mb-6 space-y-4">
@@ -200,7 +210,8 @@ export default async function PostPage({
   }
 
   const typeInfo = POST_TYPE_LABELS[post.post_type];
-  const publishedDate = new Date(post.published_at);
+  // UTC를 한국 시간대로 변환
+  const publishedDate = toZonedTime(new Date(post.published_at), KOREA_TIMEZONE);
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-8">

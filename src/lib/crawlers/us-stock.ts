@@ -6,7 +6,7 @@ const YAHOO_FINANCE_API = "https://query1.finance.yahoo.com/v8/finance/chart";
 interface YahooChartResult {
   meta: {
     regularMarketPrice: number;
-    previousClose: number;
+    chartPreviousClose: number;  // API 실제 필드명
     shortName?: string;
     symbol: string;
   };
@@ -44,16 +44,20 @@ export async function fetchUSMarketIndices(): Promise<IndexData[]> {
   results.forEach((result, i) => {
     if (result.status === "fulfilled" && result.value) {
       const meta = result.value.meta;
-      const change = meta.regularMarketPrice - meta.previousClose;
-      const changePercent = (change / meta.previousClose) * 100;
+      const prevClose = meta.chartPreviousClose;
 
-      indices.push({
-        name: symbols[i].name,
-        value: Math.round(meta.regularMarketPrice * 100) / 100,
-        change: Math.round(change * 100) / 100,
-        changePercent: Math.round(changePercent * 100) / 100,
-        market: "US",
-      });
+      if (prevClose && prevClose > 0) {
+        const change = meta.regularMarketPrice - prevClose;
+        const changePercent = (change / prevClose) * 100;
+
+        indices.push({
+          name: symbols[i].name,
+          value: Math.round(meta.regularMarketPrice * 100) / 100,
+          change: Math.round(change * 100) / 100,
+          changePercent: Math.round(changePercent * 100) / 100,
+          market: "US",
+        });
+      }
     }
   });
 
@@ -88,17 +92,21 @@ export async function fetchUSTopStocks(): Promise<StockData[]> {
   results.forEach((result, i) => {
     if (result.status === "fulfilled" && result.value) {
       const meta = result.value.meta;
-      const change = meta.regularMarketPrice - meta.previousClose;
-      const changePercent = (change / meta.previousClose) * 100;
+      const prevClose = meta.chartPreviousClose;
 
-      stocks.push({
-        name: symbols[i].name,
-        code: symbols[i].symbol,
-        price: Math.round(meta.regularMarketPrice * 100) / 100,
-        change: Math.round(change * 100) / 100,
-        changePercent: Math.round(changePercent * 100) / 100,
-        market: "US",
-      });
+      if (prevClose && prevClose > 0) {
+        const change = meta.regularMarketPrice - prevClose;
+        const changePercent = (change / prevClose) * 100;
+
+        stocks.push({
+          name: symbols[i].name,
+          code: symbols[i].symbol,
+          price: Math.round(meta.regularMarketPrice * 100) / 100,
+          change: Math.round(change * 100) / 100,
+          changePercent: Math.round(changePercent * 100) / 100,
+          market: "US",
+        });
+      }
     }
   });
 

@@ -5,8 +5,24 @@ import { summarizeMarketData } from "@/lib/services/openai";
 import { supabaseAdmin } from "@/lib/supabase/server";
 import { PostType, PostCategory, PostMetadata, PostInsert } from "@/types/database";
 
+// 한국 시간 (KST = UTC+9) 가져오기
+function getKoreanTime(): Date {
+  const now = new Date();
+  // UTC 시간에 9시간 추가
+  const koreanTime = new Date(now.getTime() + 9 * 60 * 60 * 1000);
+  return koreanTime;
+}
+
+// 한국 시간 기준 ISO 문자열 생성
+function getKoreanISOString(): string {
+  const koreanTime = getKoreanTime();
+  // UTC 시간으로 저장하되, 한국 시간 기준으로 생성
+  return new Date().toISOString();
+}
+
 export function getCurrentPostType(): PostType {
-  const hour = new Date().getHours();
+  const koreanTime = getKoreanTime();
+  const hour = koreanTime.getUTCHours(); // getUTCHours because we already added 9 hours
 
   if (hour >= 6 && hour < 11) {
     return "morning";
