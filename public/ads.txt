@@ -1,7 +1,1 @@
-# Google AdSense
-# google.com, pub-XXXXXXXXXXXXXXXX, DIRECT, f08c47fec0942fa0
-#
-# 위 줄의 pub-XXXXXXXXXXXXXXXX를 실제 AdSense 게시자 ID로 교체하세요.
-# AdSense 승인 후 https://www.google.com/adsense 에서 확인 가능합니다.
-#
-# 형식: <광고 네트워크 도메인>, <게시자 ID>, <관계>, <인증 기관 ID>
+google.com, pub-2114994662223496, DIRECT, f08c47fec0942fa0
