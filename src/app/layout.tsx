@@ -1,7 +1,10 @@
 import type { Metadata } from "next";
 import { Noto_Sans_KR } from "next/font/google";
+import Script from "next/script";
 import Link from "next/link";
 import "./globals.css";
+
+const GA_ID = "G-TEC8GVB8JL";
 
 const notoSansKr = Noto_Sans_KR({
   variable: "--font-noto-sans-kr",
@@ -121,6 +124,13 @@ export default function RootLayout({
       className={`${notoSansKr.variable} h-full antialiased`}
     >
       <head>
+        <Script
+          src={`https://www.googletagmanager.com/gtag/js?id=${GA_ID}`}
+          strategy="afterInteractive"
+        />
+        <Script id="ga-init" strategy="afterInteractive">
+          {`window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','${GA_ID}');`}
+        </Script>
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
