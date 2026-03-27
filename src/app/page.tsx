@@ -11,6 +11,8 @@ const POST_TYPE_LABELS: Record<PostType, { label: string; emoji: string; desc: s
   morning: { label: "아침", emoji: "🌅", desc: "미국장 마감 + 한국장 전망" },
   noon: { label: "점심", emoji: "☀️", desc: "오전장 동향 + 실시간 이슈" },
   evening: { label: "저녁", emoji: "🌙", desc: "한국장 마감 + 미국장 프리뷰" },
+  weekly_review: { label: "주간 리뷰", emoji: "📊", desc: "이번 주 시장 총정리" },
+  week_ahead: { label: "주간 전망", emoji: "🔮", desc: "다음 주 주요 이벤트" },
 };
 
 async function getPosts(type?: string): Promise<Post[]> {

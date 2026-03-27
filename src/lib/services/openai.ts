@@ -34,6 +34,16 @@ const POST_TYPE_CONFIG: Record<
     emoji: "🌙",
     focus: "한국장 마감 정리 + 미국장 프리뷰",
   },
+  weekly_review: {
+    label: "주간 리뷰",
+    emoji: "📊",
+    focus: "이번 주 시장 흐름 총정리",
+  },
+  week_ahead: {
+    label: "주간 전망",
+    emoji: "🔮",
+    focus: "다음 주 주요 이벤트와 시장 전망",
+  },
 };
 
 function formatMarketData(indices: IndexData[]): string {
@@ -116,6 +126,109 @@ ${newsData || "뉴스 없음"}
 투자자가 오늘 주목할 포인트 3개를 bullet point로 정리해주세요.`;
 }
 
+function buildWeekendPrompt(input: SummarizeInput): string {
+  const { news, indices, postType } = input;
+  const config = POST_TYPE_CONFIG[postType];
+  const isWeeklyReview = postType === "weekly_review";
+
+  const today = new Date().toLocaleDateString("ko-KR", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+    weekday: "long",
+  });
+
+  const marketData = formatMarketData(indices);
+  const newsData = formatNewsForPrompt(news);
+
+  if (isWeeklyReview) {
+    return `${today} 주간 시장 리뷰를 작성해주세요.
+
+=== 최근 시장 데이터 ===
+${marketData || "데이터 없음"}
+
+=== 이번 주 주요 뉴스 ===
+${newsData || "뉴스 없음"}
+
+=== 작성 가이드 ===
+- 타겟: 바쁜 직장인 (주말 여유롭게 5-7분 읽기)
+- 톤: 친근하고 분석적, 한 주를 되돌아보는 느낌
+- 이번 주 시장의 주요 흐름과 테마 정리
+- 섹터별 동향 분석 포함
+
+=== 출력 형식 (JSON) ===
+{"title": "제목", "summary": "요약", "content": "본문"}
+
+- title: 이번 주 핵심을 담은 제목 (예: "반도체 랠리와 금리 인하 기대감")
+- summary: 한 주 요약 1-2문장
+- content: 아래 마크다운 형식의 본문
+
+=== content 본문 구조 ===
+
+## 📊 이번 주 시장 총정리
+
+한국과 미국 시장의 한 주 흐름을 3-4문장으로 요약. 주요 상승/하락 요인 설명.
+
+## 🎯 이번 주 핵심 테마
+
+이번 주 시장을 움직인 2-3개 핵심 테마를 분석해주세요.
+- **테마명**: 설명 및 관련 종목/섹터
+
+## 📰 놓치면 안 될 뉴스 TOP 5
+
+이번 주 가장 중요했던 뉴스 5개를 선별하여 요약.
+- **[한국/미국]** 뉴스 요약 → 시장 영향
+
+## 💭 투자자 생각거리
+
+주말 동안 생각해볼 만한 투자 관점 2-3개를 제시해주세요.`;
+  } else {
+    // week_ahead
+    return `${today} 다음 주 시장 전망을 작성해주세요.
+
+=== 현재 시장 상황 ===
+${marketData || "데이터 없음"}
+
+=== 최근 뉴스 ===
+${newsData || "뉴스 없음"}
+
+=== 작성 가이드 ===
+- 타겟: 바쁜 직장인 (일요일 저녁 5-7분 읽기)
+- 톤: 친근하고 전망적, 다음 주를 준비하는 느낌
+- 다음 주 주요 일정과 이벤트 정리
+- 주목해야 할 섹터/종목 제시
+
+=== 출력 형식 (JSON) ===
+{"title": "제목", "summary": "요약", "content": "본문"}
+
+- title: 다음 주 핵심 전망 (예: "FOMC 주간, 변동성 확대 예상")
+- summary: 다음 주 핵심 1-2문장
+- content: 아래 마크다운 형식의 본문
+
+=== content 본문 구조 ===
+
+## 🔮 다음 주 시장 전망
+
+다음 주 예상되는 시장 흐름을 3-4문장으로 전망. 주요 변수 설명.
+
+## 📅 다음 주 주요 일정
+
+다음 주 중요한 경제 지표 발표, 기업 실적 발표, 중앙은행 이벤트 등을 정리.
+- **월요일**: 일정
+- **화요일**: 일정
+(중요 일정 위주로)
+
+## 🎯 주목할 섹터 & 종목
+
+다음 주 관심 가져야 할 섹터나 종목 2-3개를 제시.
+- **섹터/종목명**: 주목 이유
+
+## 💡 투자 체크리스트
+
+다음 주 투자자가 체크해야 할 포인트 3개를 bullet point로 정리.`;
+  }
+}
+
 export async function summarizeMarketData(
   input: SummarizeInput
 ): Promise<SummarizeOutput> {
@@ -175,6 +288,65 @@ export async function summarizeMarketData(
   };
 }
 
+export async function summarizeWeekendContent(
+  input: SummarizeInput
+): Promise<SummarizeOutput> {
+  const { postType } = input;
+  const config = POST_TYPE_CONFIG[postType];
+
+  const today = new Date().toLocaleDateString("ko-KR", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+
+  const prompt = buildWeekendPrompt(input);
+  const availableProviders = getAvailableProviders();
+
+  console.log(
+    `Available AI providers for weekend content: ${availableProviders.map((p) => p.name).join(", ") || "None"}`
+  );
+
+  // Fallback 순서대로 시도
+  for (const provider of aiProviders) {
+    if (!provider.isAvailable()) {
+      console.log(`Skipping ${provider.name}: API key not configured`);
+      continue;
+    }
+
+    try {
+      console.log(`Trying ${provider.name} for weekend content...`);
+      const response = await provider.summarize(prompt);
+
+      if (!response) {
+        throw new Error("Empty response");
+      }
+
+      const parsed = JSON.parse(response);
+      console.log(`Success with ${provider.name}`);
+
+      return {
+        title: parsed.title || `${config.emoji} ${today} ${config.label}`,
+        summary: parsed.summary || `${config.label} 콘텐츠입니다.`,
+        content: parsed.content || generateWeekendFallbackContent(input),
+        provider: provider.name,
+      };
+    } catch (error) {
+      console.error(`${provider.name} failed:`, error);
+      continue;
+    }
+  }
+
+  // 모든 AI provider 실패 시 fallback
+  console.log("All AI providers failed, using weekend fallback content");
+  return {
+    title: `${config.emoji} ${today} ${config.label}`,
+    summary: `${config.label} 콘텐츠입니다.`,
+    content: generateWeekendFallbackContent(input),
+    provider: "Fallback",
+  };
+}
+
 function generateFallbackContent(input: SummarizeInput): string {
   const { news, indices } = input;
   const kr = indices.filter((i) => i.market === "KR");
@@ -215,6 +387,68 @@ function generateFallbackContent(input: SummarizeInput): string {
   content += "- 시장 동향을 주시하며 신중한 투자 판단이 필요합니다.\n";
   content += "- 주요 경제 지표 발표 일정을 확인하세요.\n";
   content += "- 글로벌 이슈가 국내 시장에 미치는 영향을 살펴보세요.\n";
+
+  return content;
+}
+
+function generateWeekendFallbackContent(input: SummarizeInput): string {
+  const { news, indices, postType } = input;
+  const isWeeklyReview = postType === "weekly_review";
+  const kr = indices.filter((i) => i.market === "KR");
+  const us = indices.filter((i) => i.market === "US");
+
+  let content = "";
+
+  if (isWeeklyReview) {
+    content += "## 📊 이번 주 시장 총정리\n\n";
+    content += "이번 주 시장은 다양한 요인들로 등락을 반복했습니다.\n\n";
+  } else {
+    content += "## 🔮 다음 주 시장 전망\n\n";
+    content += "다음 주에도 글로벌 경제 지표와 기업 실적에 주목해야 합니다.\n\n";
+  }
+
+  if (kr.length > 0 || us.length > 0) {
+    content += "### 현재 시장 상황\n\n";
+    if (kr.length > 0) {
+      content += "**한국** 🇰🇷\n";
+      kr.forEach((idx) => {
+        const sign = idx.change >= 0 ? "+" : "";
+        content += `- ${idx.name}: ${idx.value.toLocaleString()} (${sign}${idx.changePercent.toFixed(2)}%)\n`;
+      });
+      content += "\n";
+    }
+    if (us.length > 0) {
+      content += "**미국** 🇺🇸\n";
+      us.forEach((idx) => {
+        const sign = idx.change >= 0 ? "+" : "";
+        content += `- ${idx.name}: ${idx.value.toLocaleString()} (${sign}${idx.changePercent.toFixed(2)}%)\n`;
+      });
+      content += "\n";
+    }
+  }
+
+  if (news.length > 0) {
+    content += isWeeklyReview
+      ? "## 📰 이번 주 주요 뉴스\n\n"
+      : "## 📰 관련 뉴스\n\n";
+    news.slice(0, 5).forEach((n) => {
+      const tag = n.source.includes("네이버") ? "한국" : "글로벌";
+      content += `- **[${tag}]** ${n.title}\n`;
+    });
+    content += "\n";
+  }
+
+  if (isWeeklyReview) {
+    content += "## 💭 투자자 생각거리\n\n";
+    content += "- 이번 주 시장 흐름을 복기하며 포트폴리오를 점검해보세요.\n";
+    content += "- 다음 주 주요 경제 일정을 미리 확인하세요.\n";
+    content += "- 장기적 관점에서 투자 전략을 재검토해보세요.\n";
+  } else {
+    content += "## 💡 투자 체크리스트\n\n";
+    content += "- 다음 주 주요 경제 지표 발표 일정을 확인하세요.\n";
+    content += "- 포트폴리오 리밸런싱이 필요한지 검토하세요.\n";
+    content += "- 글로벌 이슈의 영향을 모니터링하세요.\n";
+  }
 
   return content;
 }

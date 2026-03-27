@@ -1,4 +1,4 @@
-export type PostType = "morning" | "noon" | "evening";
+export type PostType = "morning" | "noon" | "evening" | "weekly_review" | "week_ahead";
 export type PostCategory = "news" | "stock" | "mixed";
 
 export interface Post {
