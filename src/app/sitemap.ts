@@ -1,6 +1,9 @@
 import type { MetadataRoute } from "next";
 import { supabase } from "@/lib/supabase/client";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 3600; // 1시간마다 재생성
+
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://market-pulse-kr.vercel.app";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
