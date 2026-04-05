@@ -36,7 +36,7 @@ const geminiProvider: AIProvider = {
   summarize: async (prompt: string) => {
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
     const model = genAI.getGenerativeModel({
-      model: "gemini-1.5-flash",
+      model: "gemini-2.0-flash",
       generationConfig: { maxOutputTokens: 4096 },
     });
 
@@ -57,7 +57,7 @@ const claudeProvider: AIProvider = {
     const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
     const message = await client.messages.create({
-      model: "claude-sonnet-4-20250514",
+      model: "claude-sonnet-4-6",
       max_tokens: 4096,
       messages: [
         {
