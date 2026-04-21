@@ -101,7 +101,8 @@ async function findExistingPostForSlot(postType: PostType): Promise<string | nul
     throw error;
   }
 
-  return data?.[0]?.id || null;
+  const existingPost = (data as Array<{ id: string }> | null)?.[0];
+  return existingPost?.id || null;
 }
 
 export async function generateAndSavePost(): Promise<GenerationResult> {
