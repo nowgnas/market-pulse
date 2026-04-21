@@ -2,9 +2,17 @@ import { fetchAllNews } from "@/lib/crawlers/naver-news";
 import { fetchKoreanMarketData } from "@/lib/crawlers/naver-stock";
 import { fetchUSMarketData } from "@/lib/crawlers/us-stock";
 import { summarizeMarketData, summarizeWeekendContent } from "@/lib/services/openai";
-import { getMarketHolidayStatus, MarketHolidayStatus } from "@/lib/services/holidays";
+import { getMarketHolidayStatus } from "@/lib/services/holidays";
 import { supabaseAdmin } from "@/lib/supabase/server";
 import { PostType, PostCategory, PostMetadata, PostInsert } from "@/types/database";
+
+interface GenerationResult {
+  success: boolean;
+  postId?: string;
+  error?: string;
+  skipped?: boolean;
+  reason?: string;
+}
 
 // 한국 시간 (KST = UTC+9) 가져오기
 function getKoreanTime(): Date {
@@ -62,17 +70,63 @@ export function shouldSkipWeekendPost(): boolean {
   return false;
 }
 
-export async function generateAndSavePost(): Promise<{
-  success: boolean;
-  postId?: string;
-  error?: string;
-  skipped?: boolean;
-}> {
+function getCurrentKoreanDayRange(): { start: string; end: string } {
+  const koreanTime = getKoreanTime();
+  const year = koreanTime.getUTCFullYear();
+  const month = koreanTime.getUTCMonth();
+  const day = koreanTime.getUTCDate();
+
+  const start = new Date(Date.UTC(year, month, day) - 9 * 60 * 60 * 1000);
+  const end = new Date(Date.UTC(year, month, day + 1) - 9 * 60 * 60 * 1000);
+
+  return {
+    start: start.toISOString(),
+    end: end.toISOString(),
+  };
+}
+
+async function findExistingPostForSlot(postType: PostType): Promise<string | null> {
+  const { start, end } = getCurrentKoreanDayRange();
+
+  const { data, error } = await supabaseAdmin
+    .from("posts")
+    .select("id")
+    .eq("post_type", postType)
+    .gte("published_at", start)
+    .lt("published_at", end)
+    .order("published_at", { ascending: false })
+    .limit(1);
+
+  if (error) {
+    throw error;
+  }
+
+  return data?.[0]?.id || null;
+}
+
+export async function generateAndSavePost(): Promise<GenerationResult> {
   try {
     // 주말 점심/저녁 시간에는 포스팅 스킵
     if (shouldSkipWeekendPost()) {
       console.log("Skipping weekend post (only posting at 8 AM on weekends)");
-      return { success: true, skipped: true };
+      return {
+        success: true,
+        skipped: true,
+        reason: "weekend-schedule",
+      };
+    }
+
+    const postType = getCurrentPostType();
+    const existingPostId = await findExistingPostForSlot(postType);
+
+    if (existingPostId) {
+      console.log(`Skipping duplicate post for ${postType}: ${existingPostId}`);
+      return {
+        success: true,
+        skipped: true,
+        reason: "duplicate-slot",
+        postId: existingPostId,
+      };
     }
 
     // 공휴일 상태 확인
@@ -85,44 +139,51 @@ export async function generateAndSavePost(): Promise<{
       fetchUSMarketData(),
     ]);
 
-    const postType = getCurrentPostType();
     const { isWeekend: weekend } = isWeekend();
 
     const allStocks = [...krMarket.stocks, ...usMarket.stocks];
     const allIndices = [...krMarket.indices, ...usMarket.indices];
 
-    let title: string;
-    let content: string;
-    let summary: string;
+    const generationResult = weekend
+      ? await summarizeWeekendContent({
+          news,
+          stocks: allStocks,
+          indices: allIndices,
+          postType,
+          marketStatus,
+        })
+      : await summarizeMarketData({
+          news,
+          stocks: allStocks,
+          indices: allIndices,
+          postType,
+          marketStatus,
+        });
 
-    if (weekend) {
-      // 주말용 콘텐츠 생성
-      const result = await summarizeWeekendContent({
-        news,
-        stocks: allStocks,
-        indices: allIndices,
-        postType,
-        marketStatus,
-      });
-      title = result.title;
-      content = result.content;
-      summary = result.summary;
-    } else {
-      // 평일용 콘텐츠 생성
-      const result = await summarizeMarketData({
-        news,
-        stocks: allStocks,
-        indices: allIndices,
-        postType,
-        marketStatus,
-      });
-      title = result.title;
-      content = result.content;
-      summary = result.summary;
+    if (generationResult.isFallback) {
+      console.error(
+        "Skipping publish because only fallback content is available:",
+        generationResult.failureReasons?.join(" | ") || "No provider details"
+      );
+
+      return {
+        success: true,
+        skipped: true,
+        reason: "fallback-content",
+        error: generationResult.failureReasons?.join(" | "),
+      };
     }
 
+    const { title, content, summary } = generationResult;
+
     const metadata: PostMetadata = {
-      news: news.slice(0, 10).map(({ body: _, ...rest }) => rest),
+      news: news.slice(0, 10).map((item) => ({
+        title: item.title,
+        summary: item.summary,
+        source: item.source,
+        url: item.url,
+        publishedAt: item.publishedAt,
+      })),
       stocks: allStocks.slice(0, 15),
       indices: allIndices,
       marketStatus: {

@@ -11,6 +11,8 @@ export interface AIProvider {
 const SYSTEM_PROMPT =
   "당신은 한국/미국 증시와 경제 뉴스를 분석하는 전문 금융 에디터입니다. 뉴스 본문 내용을 근거로 심층 분석 포스팅을 작성합니다. 반드시 유효한 JSON 형식으로만 응답하세요.";
 
+const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-2.5-flash";
+
 const openaiProvider: AIProvider = {
   name: "OpenAI",
   isAvailable: () => !!process.env.OPENAI_API_KEY,
@@ -36,7 +38,7 @@ const geminiProvider: AIProvider = {
   summarize: async (prompt: string) => {
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
     const model = genAI.getGenerativeModel({
-      model: "gemini-2.0-flash",
+      model: GEMINI_MODEL,
       generationConfig: { maxOutputTokens: 4096 },
     });
 

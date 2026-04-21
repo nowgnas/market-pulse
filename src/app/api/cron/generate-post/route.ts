@@ -16,6 +16,16 @@ export async function GET(request: NextRequest) {
   try {
     const result = await generateAndSavePost();
 
+    if (result.success && result.skipped) {
+      return NextResponse.json({
+        success: true,
+        skipped: true,
+        message: result.reason || "Post generation skipped",
+        postId: result.postId,
+        detail: result.error,
+      });
+    }
+
     if (result.success) {
       return NextResponse.json({
         success: true,

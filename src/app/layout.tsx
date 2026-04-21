@@ -131,7 +131,6 @@ export default function RootLayout({
       className={`${notoSansKr.variable} h-full antialiased`}
     >
       <head>
-        {/* eslint-disable-next-line @next/next/no-sync-scripts */}
         <script async src={`https://www.googletagmanager.com/gtag/js?id=${GA_ID}`} />
         <script
           async

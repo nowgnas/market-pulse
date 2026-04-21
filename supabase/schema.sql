@@ -6,7 +6,7 @@ CREATE TABLE IF NOT EXISTS posts (
   title VARCHAR(500) NOT NULL,
   content TEXT NOT NULL,
   summary TEXT NOT NULL,
-  post_type VARCHAR(20) NOT NULL CHECK (post_type IN ('morning', 'noon', 'evening')),
+  post_type VARCHAR(20) NOT NULL CHECK (post_type IN ('morning', 'noon', 'evening', 'weekly_review', 'week_ahead')),
   category VARCHAR(20) NOT NULL CHECK (category IN ('news', 'stock', 'mixed')),
   published_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),

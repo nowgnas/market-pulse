@@ -1,13 +1,6 @@
 name: Generate Market Post
 
 on:
-  schedule:
-    # KST 08:00 = UTC 23:00 (전날)
-    - cron: '0 23 * * *'
-    # KST 12:00 = UTC 03:00
-    - cron: '0 3 * * *'
-    # KST 18:00 = UTC 09:00
-    - cron: '0 9 * * *'
   workflow_dispatch:
 
 jobs:

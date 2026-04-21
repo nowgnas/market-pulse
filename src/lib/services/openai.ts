@@ -15,6 +15,46 @@ interface SummarizeOutput {
   content: string;
   summary: string;
   provider?: string;
+  isFallback?: boolean;
+  failureReasons?: string[];
+}
+
+function normalizeGeneratedText(value: unknown): string {
+  return typeof value === "string" ? value.trim() : "";
+}
+
+function formatProviderError(error: unknown): string {
+  if (error instanceof Error) {
+    return error.message;
+  }
+
+  return typeof error === "string" ? error : "Unknown error";
+}
+
+function parseAiResponse(response: string): {
+  title: string;
+  summary: string;
+  content: string;
+} {
+  const parsed = JSON.parse(response) as {
+    title?: unknown;
+    summary?: unknown;
+    content?: unknown;
+  };
+
+  const title = normalizeGeneratedText(parsed.title);
+  const summary = normalizeGeneratedText(parsed.summary);
+  const content = normalizeGeneratedText(parsed.content);
+
+  if (!summary) {
+    throw new Error("Missing summary in AI response");
+  }
+
+  if (!content) {
+    throw new Error("Missing content in AI response");
+  }
+
+  return { title, summary, content };
 }
 
 const POST_TYPE_CONFIG: Record<
@@ -155,7 +195,6 @@ ${newsData || "뉴스 없음"}
 
 function buildWeekendPrompt(input: SummarizeInput): string {
   const { news, indices, postType, marketStatus } = input;
-  const config = POST_TYPE_CONFIG[postType];
   const isWeeklyReview = postType === "weekly_review";
 
   const today = new Date().toLocaleDateString("ko-KR", {
@@ -282,7 +321,9 @@ export async function summarizeMarketData(
     `Available AI providers: ${availableProviders.map((p) => p.name).join(", ") || "None"}`
   );
 
-  // Fallback 순서대로 시도
+  const failureReasons: string[] = [];
+
+  // Provider 순서대로 시도 (Gemini -> OpenAI -> Claude)
   for (const provider of aiProviders) {
     if (!provider.isAvailable()) {
       console.log(`Skipping ${provider.name}: API key not configured`);
@@ -297,17 +338,19 @@ export async function summarizeMarketData(
         throw new Error("Empty response");
       }
 
-      const parsed = JSON.parse(response);
+      const parsed = parseAiResponse(response);
       console.log(`Success with ${provider.name}`);
 
       return {
         title: parsed.title || `${config.emoji} ${today} ${config.label} 마켓 브리핑`,
-        summary: parsed.summary || "오늘의 시장 요약입니다.",
-        content: parsed.content || generateFallbackContent(input),
+        summary: parsed.summary,
+        content: parsed.content,
         provider: provider.name,
+        isFallback: false,
       };
     } catch (error) {
       console.error(`${provider.name} failed:`, error);
+      failureReasons.push(`${provider.name}: ${formatProviderError(error)}`);
       continue;
     }
   }
@@ -319,6 +362,8 @@ export async function summarizeMarketData(
     summary: "오늘의 시장 요약입니다.",
     content: generateFallbackContent(input),
     provider: "Fallback",
+    isFallback: true,
+    failureReasons,
   };
 }
 
@@ -341,7 +386,9 @@ export async function summarizeWeekendContent(
     `Available AI providers for weekend content: ${availableProviders.map((p) => p.name).join(", ") || "None"}`
   );
 
-  // Fallback 순서대로 시도
+  const failureReasons: string[] = [];
+
+  // Provider 순서대로 시도 (Gemini -> OpenAI -> Claude)
   for (const provider of aiProviders) {
     if (!provider.isAvailable()) {
       console.log(`Skipping ${provider.name}: API key not configured`);
@@ -356,17 +403,19 @@ export async function summarizeWeekendContent(
         throw new Error("Empty response");
       }
 
-      const parsed = JSON.parse(response);
+      const parsed = parseAiResponse(response);
       console.log(`Success with ${provider.name}`);
 
       return {
         title: parsed.title || `${config.emoji} ${today} ${config.label}`,
-        summary: parsed.summary || `${config.label} 콘텐츠입니다.`,
-        content: parsed.content || generateWeekendFallbackContent(input),
+        summary: parsed.summary,
+        content: parsed.content,
         provider: provider.name,
+        isFallback: false,
       };
     } catch (error) {
       console.error(`${provider.name} failed:`, error);
+      failureReasons.push(`${provider.name}: ${formatProviderError(error)}`);
       continue;
     }
   }
@@ -378,6 +427,8 @@ export async function summarizeWeekendContent(
     summary: `${config.label} 콘텐츠입니다.`,
     content: generateWeekendFallbackContent(input),
     provider: "Fallback",
+    isFallback: true,
+    failureReasons,
   };
 }
 
