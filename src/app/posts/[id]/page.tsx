@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase/client";
+import { AdSenseScript } from "@/components/adsense-script";
 import { Post, PostType } from "@/types/database";
 import { format } from "date-fns";
 import { ko } from "date-fns/locale";
@@ -242,6 +243,27 @@ function NewsList({ metadata }: { metadata: Post["metadata"] }) {
   );
 }
 
+function hasValuableContent(post: Post): boolean {
+  const normalizedSummary = (post.summary || "").trim();
+  const normalizedContent = (post.content || "").trim();
+  const blockedSummaries = new Set([
+    "오늘의 시장 요약입니다.",
+    "주간 리뷰 콘텐츠입니다.",
+    "주간 전망 콘텐츠입니다.",
+  ]);
+
+  if (!normalizedSummary || !normalizedContent) {
+    return false;
+  }
+
+  if (blockedSummaries.has(normalizedSummary)) {
+    return false;
+  }
+
+  const combinedLength = normalizedSummary.length + normalizedContent.length;
+  return combinedLength >= 900;
+}
+
 export default async function PostPage({
   params,
 }: {
@@ -257,6 +279,7 @@ export default async function PostPage({
   const typeInfo = POST_TYPE_LABELS[post.post_type];
   // UTC를 한국 시간대로 변환
   const publishedDate = toZonedTime(new Date(post.published_at), KOREA_TIMEZONE);
+  const showAds = hasValuableContent(post);
 
   const articleJsonLd = {
     "@context": "https://schema.org",
@@ -274,6 +297,7 @@ export default async function PostPage({
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-8">
+      {showAds && <AdSenseScript />}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(articleJsonLd) }}
