@@ -44,7 +44,7 @@ export default function AboutPage() {
             <strong>점심 브리핑 (12:00)</strong> — 오전장 동향과 실시간 주요 이슈
           </li>
           <li>
-            <strong>저녁 브리핑 (18:00)</strong> — 한국장 마감 정리와 미국장
+            <strong>저녁 브리핑 (16:00)</strong> — 한국장 마감 정리와 미국장
             프리뷰
           </li>
         </ul>

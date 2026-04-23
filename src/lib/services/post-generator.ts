@@ -85,6 +85,28 @@ function getCurrentKoreanDayRange(): { start: string; end: string } {
   };
 }
 
+function getScheduledPublishedAt(postType: PostType): string {
+  const koreanTime = getKoreanTime();
+  const year = koreanTime.getUTCFullYear();
+  const month = koreanTime.getUTCMonth();
+  const day = koreanTime.getUTCDate();
+
+  const slotHourMap: Record<PostType, number> = {
+    morning: 8,
+    noon: 12,
+    evening: 16,
+    weekly_review: 8,
+    week_ahead: 8,
+  };
+
+  const hour = slotHourMap[postType];
+  const scheduledUtc = new Date(
+    Date.UTC(year, month, day, hour, 0, 0) - 9 * 60 * 60 * 1000
+  );
+
+  return scheduledUtc.toISOString();
+}
+
 async function findExistingPostForSlot(postType: PostType): Promise<string | null> {
   const { start, end } = getCurrentKoreanDayRange();
 
@@ -201,7 +223,7 @@ export async function generateAndSavePost(): Promise<GenerationResult> {
       summary,
       post_type: postType,
       category,
-      published_at: new Date().toISOString(),
+      published_at: getScheduledPublishedAt(postType),
       metadata,
     };
 
