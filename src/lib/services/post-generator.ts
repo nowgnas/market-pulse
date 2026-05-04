@@ -33,8 +33,6 @@ function isWeekend(): { isWeekend: boolean; dayOfWeek: number } {
 }
 
 export function getCurrentPostType(): PostType {
-  const koreanTime = getKoreanTime();
-  const hour = koreanTime.getUTCHours();
   const { isWeekend: weekend, dayOfWeek } = isWeekend();
 
   // 주말 처리
@@ -47,14 +45,9 @@ export function getCurrentPostType(): PostType {
     return "week_ahead";
   }
 
-  // 평일 처리
-  if (hour >= 6 && hour < 11) {
-    return "morning";
-  } else if (hour >= 11 && hour < 16) {
-    return "noon";
-  } else {
-    return "evening";
-  }
+  // 평일은 하루 1개 daily insight만 발행합니다.
+  // 이후 cron 실행은 같은 post_type/date 중복 방지 로직에서 skip됩니다.
+  return "morning";
 }
 
 // 주말에는 하루에 한 번만 포스팅 (오전 8시)
@@ -125,6 +118,40 @@ async function findExistingPostForSlot(postType: PostType): Promise<string | nul
 
   const existingPost = (data as Array<{ id: string }> | null)?.[0];
   return existingPost?.id || null;
+}
+
+function hasMinimumEditorialQuality({
+  summary,
+  content,
+}: {
+  summary: string;
+  content: string;
+}): boolean {
+  const normalizedSummary = summary.trim();
+  const normalizedContent = content.trim();
+  const blockedSummaries = new Set([
+    "오늘의 시장 요약입니다.",
+    "주간 리뷰 콘텐츠입니다.",
+    "주간 전망 콘텐츠입니다.",
+  ]);
+
+  if (!normalizedSummary || !normalizedContent) {
+    return false;
+  }
+
+  if (blockedSummaries.has(normalizedSummary)) {
+    return false;
+  }
+
+  if (normalizedSummary.length + normalizedContent.length < 1500) {
+    return false;
+  }
+
+  const sectionCount = normalizedContent
+    .split("\n")
+    .filter((line) => line.startsWith("## ")).length;
+
+  return sectionCount >= 4;
 }
 
 export async function generateAndSavePost(): Promise<GenerationResult> {
@@ -198,6 +225,15 @@ export async function generateAndSavePost(): Promise<GenerationResult> {
     }
 
     const { title, content, summary } = generationResult;
+
+    if (!hasMinimumEditorialQuality({ summary, content })) {
+      console.error("Skipping publish because generated content did not pass editorial quality checks");
+      return {
+        success: true,
+        skipped: true,
+        reason: "editorial-quality",
+      };
+    }
 
     const metadata: PostMetadata = {
       news: news.slice(0, 10).map((item) => ({

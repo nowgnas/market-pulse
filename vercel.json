@@ -3,14 +3,6 @@
     {
       "path": "/api/cron/generate-post",
       "schedule": "0 23 * * *"
-    },
-    {
-      "path": "/api/cron/generate-post",
-      "schedule": "0 3 * * *"
-    },
-    {
-      "path": "/api/cron/generate-post",
-      "schedule": "0 7 * * *"
     }
   ]
 }

@@ -15,7 +15,7 @@ const notoSansKr = Noto_Sans_KR({
 const SITE_NAME = "마켓 브리핑";
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://market-pulse-kr.vercel.app";
 const SITE_DESCRIPTION =
-  "바쁜 직장인을 위한 한국/미국 증시 뉴스 요약. 매일 아침, 점심, 저녁 3-5분이면 오늘의 시장을 파악하세요.";
+  "바쁜 직장인을 위한 한국/미국 증시 해설. 하루 한 번, 시장을 움직인 원인과 확인할 포인트를 정리합니다.";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -25,7 +25,7 @@ export const metadata: Metadata = {
   },
   description: SITE_DESCRIPTION,
   keywords: [
-    "증시 브리핑", "주식 뉴스 요약", "AI 증시 분석",
+    "증시 해설", "주식 뉴스 분석", "AI 증시 분석",
     "KOSPI", "KOSDAQ", "나스닥", "S&P500", "다우존스",
     "한국 증시", "미국 증시", "경제 뉴스", "투자 정보",
     "주식 시장 분석", "오늘의 증시", "market pulse",
@@ -79,7 +79,7 @@ function Header() {
             <span className="font-bold text-lg tracking-tight">Market Pulse</span>
           </Link>
           <span className="text-xs text-secondary hidden sm:block">
-            AI 증시 브리핑
+            시장 해설 노트
           </span>
         </nav>
       </div>
@@ -92,7 +92,7 @@ function Footer() {
     <footer className="border-t border-border mt-auto">
       <div className="max-w-3xl mx-auto px-4 py-5 text-xs text-secondary">
         <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
-          <p>매일 08:00 · 12:00 · 16:00 자동 업데이트</p>
+          <p>평일 1회 시장 해설 · 주말 리뷰와 전망</p>
           <nav className="flex items-center gap-4">
             <Link href="/about" className="hover:text-foreground transition-colors">소개</Link>
             <Link href="/privacy" className="hover:text-foreground transition-colors">개인정보처리방침</Link>

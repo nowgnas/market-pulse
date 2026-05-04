@@ -8,9 +8,9 @@ import { toZonedTime } from "date-fns-tz";
 const KOREA_TIMEZONE = "Asia/Seoul";
 
 const POST_TYPE_LABELS: Record<PostType, { label: string; emoji: string; desc: string }> = {
-  morning: { label: "아침", emoji: "🌅", desc: "미국장 마감 + 한국장 전망" },
-  noon: { label: "점심", emoji: "☀️", desc: "오전장 동향 + 실시간 이슈" },
-  evening: { label: "저녁", emoji: "🌙", desc: "한국장 마감 + 미국장 프리뷰" },
+  morning: { label: "데일리 인사이트", emoji: "🔎", desc: "핵심 원인 + 확인 포인트" },
+  noon: { label: "장중 메모", emoji: "☀️", desc: "장중 변수 정리" },
+  evening: { label: "마감 노트", emoji: "🌙", desc: "마감 해설 + 다음 관점" },
   weekly_review: { label: "주간 리뷰", emoji: "📊", desc: "이번 주 시장 총정리" },
   week_ahead: { label: "주간 전망", emoji: "🔮", desc: "다음 주 주요 이벤트" },
 };
@@ -22,7 +22,7 @@ async function getPosts(type?: string): Promise<Post[]> {
     .order("published_at", { ascending: false })
     .limit(20);
 
-  if (type && ["morning", "noon", "evening"].includes(type)) {
+  if (type && ["morning", "noon", "evening", "weekly_review", "week_ahead"].includes(type)) {
     query = query.eq("post_type", type);
   }
 
@@ -127,9 +127,9 @@ function PostCard({ post }: { post: Post }) {
 function FilterTabs({ currentType }: { currentType?: string }) {
   const tabs = [
     { key: "", label: "전체" },
-    { key: "morning", label: "🌅 아침" },
-    { key: "noon", label: "☀️ 점심" },
-    { key: "evening", label: "🌙 저녁" },
+    { key: "morning", label: "🔎 인사이트" },
+    { key: "weekly_review", label: "📊 주간 리뷰" },
+    { key: "week_ahead", label: "🔮 주간 전망" },
   ];
 
   return (
@@ -158,9 +158,9 @@ function EmptyState() {
   return (
     <div className="text-center py-20">
       <div className="w-16 h-16 bg-muted rounded-2xl flex items-center justify-center mx-auto mb-4 text-2xl">📭</div>
-      <h2 className="text-lg font-semibold mb-1">아직 브리핑이 없습니다</h2>
+      <h2 className="text-lg font-semibold mb-1">아직 시장 해설이 없습니다</h2>
       <p className="text-secondary text-sm">
-        첫 번째 마켓 브리핑이 곧 업로드됩니다.
+        첫 번째 데일리 인사이트가 곧 업로드됩니다.
       </p>
     </div>
   );
@@ -170,24 +170,24 @@ function ValueSection() {
   return (
     <section className="mb-8 grid gap-3 sm:grid-cols-3">
       <div className="rounded-2xl border border-border bg-card p-4">
-        <div className="text-sm font-semibold mb-1">시장 맥락 정리</div>
+        <div className="text-sm font-semibold mb-1">핵심 원인 중심 해설</div>
         <p className="text-sm text-secondary leading-relaxed">
-          단순 뉴스 나열보다 한국과 미국 시장 흐름이 어떻게 연결되는지,
-          오늘 무엇이 중요해졌는지를 짧게 정리합니다.
+          하루 시장을 움직인 원인을 하나로 좁히고, 한국과 미국 시장이
+          어떻게 연결되는지 근거와 함께 설명합니다.
         </p>
       </div>
       <div className="rounded-2xl border border-border bg-card p-4">
-        <div className="text-sm font-semibold mb-1">섹터별 핵심 포인트</div>
+        <div className="text-sm font-semibold mb-1">반대 시나리오 포함</div>
         <p className="text-sm text-secondary leading-relaxed">
-          반도체, 2차전지, 바이오처럼 수급이 몰리는 섹터를 따로 묶어
-          왜 움직이는지와 확인할 포인트를 함께 제공합니다.
+          한쪽 방향을 단정하지 않고, 해석이 틀릴 수 있는 조건과 리스크를
+          함께 정리합니다.
         </p>
       </div>
       <div className="rounded-2xl border border-border bg-card p-4">
-        <div className="text-sm font-semibold mb-1">짧지만 실용적인 체크리스트</div>
+        <div className="text-sm font-semibold mb-1">직접 확인할 체크리스트</div>
         <p className="text-sm text-secondary leading-relaxed">
-          장중에 어떤 지표, 수급, 업종을 먼저 볼지 빠르게 파악할 수 있도록
-          실전형 체크리스트를 함께 담습니다.
+          장중에 어떤 지표, 수급, 업종, 이벤트를 먼저 볼지 직접 확인할
+          항목으로 정리합니다.
         </p>
       </div>
     </section>
@@ -197,19 +197,19 @@ function ValueSection() {
 function ReadingGuideSection() {
   return (
     <section className="mb-10 rounded-3xl border border-border bg-card p-6">
-      <h2 className="text-lg font-bold tracking-tight mb-3">이 브리핑을 읽는 방법</h2>
+      <h2 className="text-lg font-bold tracking-tight mb-3">이 시장 해설을 읽는 방법</h2>
       <div className="space-y-3 text-sm text-secondary leading-relaxed">
         <p>
-          마켓 브리핑은 매일 반복되는 시황 뉴스를 그대로 옮기기보다, 바쁜
-          직장인이 짧은 시간 안에 시장의 방향과 체크포인트를 이해할 수 있게
-          돕는 데 초점을 맞춥니다.
+          마켓 브리핑은 반복되는 시황 뉴스를 그대로 옮기기보다, 바쁜
+          직장인이 하루 시장을 움직인 원인과 확인할 체크포인트를 이해할 수
+          있게 돕는 데 초점을 맞춥니다.
         </p>
         <p>
-          각 포스트는 <strong className="text-foreground">시장 요약</strong>,
-          <strong className="text-foreground"> 전일 대비 변화</strong>,
-          <strong className="text-foreground"> 섹터별 해석</strong>,
+          각 포스트는 <strong className="text-foreground">핵심 원인</strong>,
+          <strong className="text-foreground"> 근거 데이터</strong>,
+          <strong className="text-foreground"> 반대 시나리오</strong>,
           <strong className="text-foreground"> 체크리스트</strong> 순서로
-          읽으면 핵심 흐름을 빠르게 파악하기 좋습니다.
+          읽으면 해석과 확인 포인트를 함께 파악하기 좋습니다.
         </p>
         <p>
           데이터는 공개 시세와 뉴스 흐름을 기반으로 정리하며, 본문의 목적은
@@ -228,7 +228,7 @@ function EditorialStandardsSection() {
         <div>
           <h2 className="text-lg font-bold tracking-tight">편집 기준</h2>
           <p className="text-sm text-secondary mt-1">
-            이 사이트는 아래 기준으로 시장 브리핑을 구성합니다.
+            이 사이트는 아래 기준으로 시장 해설을 구성합니다.
           </p>
         </div>
         <Link href="/about" className="text-sm text-primary hover:underline">
@@ -244,10 +244,10 @@ function EditorialStandardsSection() {
           </p>
         </div>
         <div className="rounded-2xl border border-border bg-card p-4">
-          <div className="text-sm font-semibold mb-1">2. 숫자보다 맥락 우선</div>
+          <div className="text-sm font-semibold mb-1">2. 근거 없는 수치 배제</div>
           <p className="text-sm text-secondary leading-relaxed">
-            지수 등락만 보여주는 것이 아니라 왜 움직였는지, 어느 섹터가
-            주목받는지를 함께 설명합니다.
+            제공된 데이터나 뉴스에서 확인되지 않는 정확한 수치와 과장된
+            표현은 사용하지 않습니다.
           </p>
         </div>
         <div className="rounded-2xl border border-border bg-card p-4">
@@ -258,10 +258,10 @@ function EditorialStandardsSection() {
           </p>
         </div>
         <div className="rounded-2xl border border-border bg-card p-4">
-          <div className="text-sm font-semibold mb-1">4. 실전 체크포인트 제공</div>
+          <div className="text-sm font-semibold mb-1">4. 반대 시나리오와 체크포인트</div>
           <p className="text-sm text-secondary leading-relaxed">
-            독자가 장중에 바로 확인할 수 있는 수급, 업종, 이벤트 중심의
-            체크리스트를 포함합니다.
+            해석이 틀릴 수 있는 조건과 독자가 직접 확인할 수 있는 수급,
+            업종, 이벤트 중심의 체크리스트를 포함합니다.
           </p>
         </div>
       </div>
@@ -281,16 +281,16 @@ export default async function HomePage({
     <div className="max-w-3xl mx-auto px-4 py-8">
       <section className="mb-8 rounded-3xl border border-border bg-card p-6 sm:p-7">
         <div className="inline-flex items-center gap-2 rounded-full bg-muted px-3 py-1 text-xs font-medium text-secondary mb-4">
-          <span>AI 시장 브리핑</span>
+          <span>AI 시장 해설</span>
           <span>·</span>
           <span>한국 · 미국 증시</span>
         </div>
-        <h1 className="text-3xl font-bold tracking-tight leading-tight">짧게 읽어도 흐름이 보이는 시장 브리핑</h1>
+        <h1 className="text-3xl font-bold tracking-tight leading-tight">하루 한 번, 근거로 읽는 시장 해설</h1>
         <p className="text-secondary text-sm sm:text-base mt-3 leading-relaxed">
-          마켓 브리핑은 한국과 미국 증시 데이터를 바탕으로 매일 아침, 점심,
-          저녁 시장의 핵심 흐름을 정리합니다. 헤드라인을 모아놓는 대신,
-          오늘 시장에서 왜 그 이슈가 중요한지와 무엇을 먼저 확인해야 하는지를
-          빠르게 이해할 수 있도록 재구성합니다.
+          마켓 브리핑은 한국과 미국 증시 데이터를 바탕으로 하루 시장을
+          움직인 핵심 원인과 확인할 근거를 정리합니다. 헤드라인을 모아놓는
+          대신, 왜 그 이슈가 중요한지와 어떤 조건을 함께 봐야 하는지를
+          이해할 수 있도록 재구성합니다.
         </p>
       </section>
 
@@ -303,7 +303,7 @@ export default async function HomePage({
       <section className="mb-10">
         <div className="flex items-end justify-between gap-3 mb-4">
           <div>
-            <h2 className="text-lg font-bold tracking-tight">최신 브리핑</h2>
+            <h2 className="text-lg font-bold tracking-tight">최신 시장 해설</h2>
             <p className="text-sm text-secondary mt-1">
               시장 데이터와 주요 뉴스를 바탕으로 정리한 최신 포스트입니다.
             </p>

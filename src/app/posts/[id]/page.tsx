@@ -13,9 +13,9 @@ const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://market-pulse-kr.ve
 const SITE_NAME = "마켓 브리핑";
 
 const POST_TYPE_LABELS: Record<PostType, { label: string; emoji: string; desc: string }> = {
-  morning: { label: "아침", emoji: "🌅", desc: "미국장 마감 + 한국장 전망" },
-  noon: { label: "점심", emoji: "☀️", desc: "오전장 동향 + 실시간 이슈" },
-  evening: { label: "저녁", emoji: "🌙", desc: "한국장 마감 + 미국장 프리뷰" },
+  morning: { label: "데일리 인사이트", emoji: "🔎", desc: "핵심 원인 + 확인 포인트" },
+  noon: { label: "장중 메모", emoji: "☀️", desc: "장중 변수 정리" },
+  evening: { label: "마감 노트", emoji: "🌙", desc: "마감 해설 + 다음 관점" },
   weekly_review: { label: "주간 리뷰", emoji: "📊", desc: "이번 주 시장 총정리" },
   week_ahead: { label: "주간 전망", emoji: "🔮", desc: "다음 주 주요 이벤트" },
 };
@@ -50,7 +50,7 @@ export async function generateMetadata({
   const typeLabel = POST_TYPE_LABELS[post.post_type]?.label || "";
   const publishedDate = toZonedTime(new Date(post.published_at), KOREA_TIMEZONE);
   const dateStr = format(publishedDate, "yyyy년 M월 d일", { locale: ko });
-  const description = post.summary || `${dateStr} ${typeLabel} 마켓 브리핑`;
+  const description = post.summary || `${dateStr} ${typeLabel} 시장 해설`;
 
   const postUrl = `${SITE_URL}/posts/${id}`;
 
@@ -58,7 +58,7 @@ export async function generateMetadata({
     title: post.title,
     description,
     keywords: [
-      `${dateStr} 증시`, typeLabel, "마켓 브리핑", "증시 분석",
+      `${dateStr} 증시`, typeLabel, "시장 해설", "증시 분석",
       "KOSPI", "나스닥", "주식 뉴스", "AI 증시 분석",
     ],
     alternates: { canonical: postUrl },
@@ -313,7 +313,7 @@ export default async function PostPage({
         <header className="mb-8">
           <div className="flex items-center gap-2 mb-3">
             <span className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-base">{typeInfo.emoji}</span>
-            <span className="text-sm font-semibold">{typeInfo.label} 브리핑</span>
+            <span className="text-sm font-semibold">{typeInfo.label}</span>
             <span className="text-xs text-secondary">{typeInfo.desc}</span>
           </div>
 
