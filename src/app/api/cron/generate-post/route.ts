@@ -5,6 +5,14 @@ export const runtime = "nodejs";
 export const maxDuration = 60;
 
 export async function GET(request: NextRequest) {
+  if (process.env.ENABLE_AUTO_POSTING !== "true") {
+    return NextResponse.json({
+      success: true,
+      skipped: true,
+      message: "Auto posting is disabled",
+    });
+  }
+
   // Vercel Cron 인증 확인
   const authHeader = request.headers.get("authorization");
   const cronSecret = process.env.CRON_SECRET;

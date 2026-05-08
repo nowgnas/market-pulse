@@ -1,17 +1,19 @@
 name: Generate Market Post
 
 on:
-  schedule:
-    # Backup schedule: KST 08:00 = UTC 23:00 (previous day)
-    - cron: '0 23 * * *'
-    # Backup schedule: KST 12:00 = UTC 03:00
-    - cron: '0 3 * * *'
-    # Backup schedule: KST 16:00 = UTC 07:00
-    - cron: '0 7 * * *'
+  # Scheduled posting is disabled while AdSense review is blocked.
+  # schedule:
+  #   # Backup schedule: KST 08:00 = UTC 23:00 (previous day)
+  #   - cron: '0 23 * * *'
+  #   # Backup schedule: KST 12:00 = UTC 03:00
+  #   - cron: '0 3 * * *'
+  #   # Backup schedule: KST 16:00 = UTC 07:00
+  #   - cron: '0 7 * * *'
   workflow_dispatch:
 
 jobs:
   generate:
+    if: ${{ false }}
     runs-on: ubuntu-latest
     timeout-minutes: 2
     steps:
